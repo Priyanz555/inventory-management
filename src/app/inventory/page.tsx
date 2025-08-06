@@ -39,11 +39,11 @@ export default function InventoryPage() {
       name: "Premium Instant Coffee 200g",
       ean: "8901030875200",
       sku: "SKU001",
-      batchId: "B2024001",
       sellableQty: 150,
       lostQty: 5,
       damagedQty: 10,
       expiredQty: 0,
+      blockedQty: 8,
       status: "in stock"
     },
     {
@@ -51,11 +51,11 @@ export default function InventoryPage() {
       name: "Organic Tea Bags 50ct",
       ean: "8901030875201",
       sku: "SKU002",
-      batchId: "B2024002",
       sellableQty: 25,
       lostQty: 2,
       damagedQty: 5,
       expiredQty: 0,
+      blockedQty: 3,
       status: "low stock"
     },
     {
@@ -63,11 +63,11 @@ export default function InventoryPage() {
       name: "Chocolate Cookies 250g",
       ean: "8901030875202",
       sku: "SKU003",
-      batchId: "B2024003",
       sellableQty: 0,
       lostQty: 0,
       damagedQty: 0,
       expiredQty: 15,
+      blockedQty: 0,
       status: "out-of-stock"
     },
     {
@@ -75,11 +75,11 @@ export default function InventoryPage() {
       name: "Energy Drink 250ml",
       ean: "8901030875203",
       sku: "SKU004",
-      batchId: "B2024004",
       sellableQty: 80,
       lostQty: 3,
       damagedQty: 7,
       expiredQty: 0,
+      blockedQty: 12,
       status: "in stock"
     },
     {
@@ -87,11 +87,11 @@ export default function InventoryPage() {
       name: "Protein Bar 60g",
       ean: "8901030875204",
       sku: "SKU005",
-      batchId: "B2024005",
       sellableQty: 15,
       lostQty: 1,
       damagedQty: 2,
       expiredQty: 0,
+      blockedQty: 5,
       status: "low stock"
     }
   ]
@@ -393,11 +393,11 @@ export default function InventoryPage() {
               <thead>
                   <tr className="bg-gray-100">
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Product Name + EAN Code / SKU ID</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-800">Batch ID</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Sellable Quantity</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Lost Quantity</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Damaged Quantity</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Expired Quantity</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-800">Blocked Quantity</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Status</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Actions</th>
                 </tr>
@@ -415,7 +415,6 @@ export default function InventoryPage() {
                           </div>
                       </div>
                     </td>
-                      <td className="py-3 px-4 text-gray-900">{item.batchId}</td>
                       <td className="py-3 px-4">
                         {editingId === item.id ? (
                           <Input
@@ -462,6 +461,18 @@ export default function InventoryPage() {
                           />
                         ) : (
                           <span className="text-gray-600 font-medium">{item.expiredQty}</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        {editingId === item.id ? (
+                          <Input
+                            type="number"
+                            value={editingData.blockedQty || 0}
+                            onChange={(e) => handleEditChange('blockedQty', e.target.value)}
+                            className="w-20 text-purple-600 font-medium"
+                          />
+                        ) : (
+                          <span className="text-purple-600 font-medium">{item.blockedQty}</span>
                         )}
                       </td>
                     <td className="py-3 px-4">

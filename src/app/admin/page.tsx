@@ -46,8 +46,6 @@ export default function AdminPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filters, setFilters] = useState({
     category: '',
-    subCategory: '',
-    baseUnit: '',
     status: '',
     dateAdded: ''
   })
@@ -203,12 +201,6 @@ export default function AdminPage() {
     if (filters.category) {
       filtered = filtered.filter(article => article.category === filters.category)
     }
-    if (filters.subCategory) {
-      filtered = filtered.filter(article => article.subCategory === filters.subCategory)
-    }
-    if (filters.baseUnit) {
-      filtered = filtered.filter(article => article.baseUnit === filters.baseUnit)
-    }
     if (filters.status) {
       filtered = filtered.filter(article => article.status === filters.status)
     }
@@ -274,8 +266,6 @@ export default function AdminPage() {
   const clearFilters = () => {
     setFilters({
       category: '',
-      subCategory: '',
-      baseUnit: '',
       status: '',
       dateAdded: ''
     })
@@ -346,7 +336,7 @@ export default function AdminPage() {
           </div>
 
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
               <select
@@ -358,31 +348,6 @@ export default function AdminPage() {
                 {categories.map(category => (
                   <option key={category} value={category}>{category}</option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Sub Category</label>
-              <select
-                value={filters.subCategory}
-                onChange={(e) => setFilters(prev => ({ ...prev, subCategory: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--button-blue))] focus:border-[hsl(var(--button-blue))]"
-              >
-                <option value="">All Sub Categories</option>
-                {subCategories.map(subCategory => (
-                  <option key={subCategory} value={subCategory}>{subCategory}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Base Unit</label>
-              <select
-                value={filters.baseUnit}
-                onChange={(e) => setFilters(prev => ({ ...prev, baseUnit: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--button-blue))] focus:border-[hsl(var(--button-blue))]"
-              >
-                <option value="">All Units</option>
-                <option value="CS">CS</option>
-                <option value="EA">EA</option>
               </select>
             </div>
             <div>
@@ -432,11 +397,9 @@ export default function AdminPage() {
                   <th className="text-left py-3 px-4 font-medium text-gray-700" title="Number of individual units per case">EA per Case</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700" title="Current status of the article">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700" title="Date when article was added to master data">Date Added</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700" title="Price to Distributor (PTD) in rupees">PTD Price</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700" title="Date of last billing transaction">Last Billing</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700" title="Minimum stock level to maintain">Safety Stock</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700" title="Minimum Order Quantity">MOQ</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700" title="Edit or manage article data">Actions</th>
+                                      <th className="text-left py-3 px-4 font-medium text-gray-700" title="Minimum stock level to maintain">Safety Stock</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700" title="Edit or manage article data">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -458,40 +421,16 @@ export default function AdminPage() {
                       {article.eaPerCase}
                     </td>
                     <td className="py-3 px-4">
-                      {editingId === article.id ? (
-                        <select
-                          value={editingData.status || ''}
-                          onChange={(e) => handleEditChange('status', e.target.value as 'Active' | 'Inactive')}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--button-blue))] focus:border-[hsl(var(--button-blue))]"
-                        >
-                          <option value="">All Status</option>
-                          <option value="Active">Active</option>
-                          <option value="Inactive">Inactive</option>
-                        </select>
-                      ) : (
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          article.status === 'Active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {article.status}
-                        </span>
-                      )}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        article.status === 'Active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {article.status}
+                      </span>
                     </td>
                     <td className="py-3 px-4">
                       {new Date(article.dateAdded).toLocaleDateString('en-GB')}
-                    </td>
-                    <td className="py-3 px-4">
-                      {editingId === article.id ? (
-                        <Input
-                          type="number"
-                          value={editingData.ptdPrice || ''}
-                          onChange={(e) => handleEditChange('ptdPrice', parseFloat(e.target.value))}
-                          className="w-full"
-                        />
-                      ) : (
-                        `₹${article.ptdPrice.toFixed(2)}`
-                      )}
                     </td>
                     <td className="py-3 px-4">
                       {editingId === article.id ? (
@@ -515,18 +454,6 @@ export default function AdminPage() {
                         />
                       ) : (
                         article.safetyStock
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {editingId === article.id ? (
-                        <Input
-                          type="number"
-                          value={editingData.moq || ''}
-                          onChange={(e) => handleEditChange('moq', parseInt(e.target.value, 10))}
-                          className="w-full"
-                        />
-                      ) : (
-                        article.moq
                       )}
                     </td>
                     <td className="py-3 px-4">
@@ -568,42 +495,49 @@ export default function AdminPage() {
             </table>
           </div>
           
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-gray-700">
-                Showing {startIndex + 1} to {Math.min(endIndex, filteredArticles.length)} of {filteredArticles.length} results
-              </p>
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                >
-                  Previous
-                </Button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(page)}
-                  >
-                    {page}
-                  </Button>
-                ))}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                >
-                  Next
-                </Button>
-              </div>
+          {/* Non-functional Pagination UI */}
+          <div className="flex items-center justify-between mt-4">
+            <p className="text-sm text-gray-700">
+              Showing 1 to 8 of 8 results
+            </p>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled={true}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                disabled={true}
+              >
+                1
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={true}
+              >
+                2
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={true}
+              >
+                3
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled={true}
+              >
+                Next
+              </Button>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>

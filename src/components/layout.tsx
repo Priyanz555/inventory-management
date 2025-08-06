@@ -30,14 +30,12 @@ const navigation = [
   { name: "Add Inventory", href: "/opening-stock/upload", icon: FileText },
   { name: "Inventory", href: "/inventory", icon: Package },
   { name: "Orders", href: "/orders", icon: ShoppingCart },
-  { name: "Refresh Inventory", href: "/inventory/refresh", icon: BarChart3 },
   { name: "Cycle Count", href: "/cycle-count/upload", icon: FileText },
   { name: "Stock Closing", href: "/closing-stock/submit", icon: FileText, badge: "Daily Task" },
 ]
 
 const adminNavigation = [
   { name: "Admin", href: "/admin", icon: Settings },
-  { name: "Reports", href: "/reports", icon: BarChart3 },
 ]
 
 const accountNavigation = [

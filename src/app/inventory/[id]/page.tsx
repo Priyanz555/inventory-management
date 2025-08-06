@@ -46,7 +46,7 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
       lostQty: 0,
       damagedQty: 0,
       expiredQty: 18,
-      value: "₹0",
+      blockedQty: 0,
       grnDate: "10/10/2023",
       status: "expired"
     },
@@ -61,7 +61,7 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
       lostQty: 2,
       damagedQty: 5,
       expiredQty: 0,
-      value: "₹3,000",
+      blockedQty: 8,
       grnDate: "10/11/2023",
       status: "near expiry"
     },
@@ -76,7 +76,7 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
       lostQty: 3,
       damagedQty: 7,
       expiredQty: 0,
-      value: "₹10,040",
+      blockedQty: 12,
       grnDate: "10/01/2024",
       status: "fresh"
     },
@@ -91,7 +91,7 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
       lostQty: 1,
       damagedQty: 2,
       expiredQty: 0,
-      value: "₹5,647.5",
+      blockedQty: 5,
       grnDate: "10/02/2024",
       status: "fresh"
     }
@@ -152,7 +152,6 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
 
   const totalBatches = batchData.length
   const totalSellable = batchData.reduce((sum, batch) => sum + batch.sellableQty, 0)
-  const totalValue = batchData.reduce((sum, batch) => sum + parseFloat(batch.value.replace('₹', '').replace(',', '')), 0)
   const alerts = batchData.filter(batch => batch.status === "expired" || batch.status === "near expiry").length
 
   return (
@@ -180,7 +179,7 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -203,19 +202,6 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
                 <p className="text-xs text-gray-500">Units ready for sale</p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Value</p>
-                <p className="text-2xl font-bold text-blue-600">₹{totalValue.toLocaleString()}</p>
-                <p className="text-xs text-gray-500">Current inventory worth</p>
-              </div>
-              <BarChart3 className="h-8 w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
@@ -357,7 +343,7 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Expiry Date</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Sellable Qty</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Lost/Damaged/Expired</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Value</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Blocked Qty</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">GRN Date</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Status</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Actions</th>
@@ -396,7 +382,9 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
                           <div>Expired: <span className="text-gray-600">{batch.expiredQty}</span></div>
                         </div>
                       </td>
-                      <td className="py-3 px-4 font-medium text-gray-900">{batch.value}</td>
+                      <td className="py-3 px-4">
+                        <span className="text-purple-600 font-medium">{batch.blockedQty}</span>
+                      </td>
                       <td className="py-3 px-4 text-gray-900">{batch.grnDate}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
