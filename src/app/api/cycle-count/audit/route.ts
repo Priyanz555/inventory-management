@@ -1,48 +1,58 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+interface CycleCountAudit {
+  id: string;
+  sessionId: string;
+  timestamp: string;
+  user: string;
+  fileName: string;
+  totalItems: number;
+  totalAdjustments: number;
+  movementsCount: number;
+  status: 'Completed' | 'Failed' | 'Cancelled';
+}
+
+export async function GET(request: NextRequest) {
   try {
-    // Mock data - in real implementation, this would fetch from database
-    const audits = [
+    // In real implementation, fetch from database
+    // For now, return mock data with the new structure
+    const mockAudits: CycleCountAudit[] = [
       {
         id: '1',
-        timestamp: '2025-01-30 15:30:25',
-        user: 'manager@company.com',
-        fileName: 'cycle_count_jan_2025.xlsx',
-        varianceSKUs: 15,
-        totalAdjQtyCS: 45,
+        sessionId: '1703123456789',
+        timestamp: '2024-01-15T10:30:00Z',
+        user: 'john.doe@company.com',
+        fileName: 'cycle_count_2024_01_15.xlsx',
+        totalItems: 150,
+        totalAdjustments: 8,
+        movementsCount: 3,
         status: 'Completed'
       },
       {
         id: '2',
-        timestamp: '2025-01-15 14:20:15',
-        user: 'admin@company.com',
-        fileName: 'cycle_count_mid_jan.xlsx',
-        varianceSKUs: 8,
-        totalAdjQtyCS: 23,
+        sessionId: '1703123456790',
+        timestamp: '2024-01-10T14:20:00Z',
+        user: 'jane.smith@company.com',
+        fileName: 'cycle_count_2024_01_10.xlsx',
+        totalItems: 145,
+        totalAdjustments: 12,
+        movementsCount: 5,
         status: 'Completed'
       },
       {
         id: '3',
-        timestamp: '2024-12-31 16:45:30',
-        user: 'manager@company.com',
-        fileName: 'year_end_count.xlsx',
-        varianceSKUs: 25,
-        totalAdjQtyCS: 67,
-        status: 'Completed'
-      },
-      {
-        id: '4',
-        timestamp: '2024-12-15 11:30:45',
-        user: 'admin@company.com',
-        fileName: 'dec_cycle_count.xlsx',
-        varianceSKUs: 0,
-        totalAdjQtyCS: 0,
-        status: 'Failed'
+        sessionId: '1703123456791',
+        timestamp: '2024-01-05T09:15:00Z',
+        user: 'mike.wilson@company.com',
+        fileName: 'cycle_count_2024_01_05.xlsx',
+        totalItems: 0,
+        totalAdjustments: 0,
+        movementsCount: 0,
+        status: 'Cancelled'
       }
     ];
 
-    return NextResponse.json(audits);
+    return NextResponse.json(mockAudits);
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to fetch audit list' },

@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
     // Validate line items
     for (let i = 0; i < body.lines.length; i++) {
       const line = body.lines[i]
-      if (!line.sku || line.ptd <= 0) {
+      if (!line.sku || line.purchaseRate <= 0 || !line.baseUnit) {
         return NextResponse.json(
-          { error: `Line ${i + 1}: SKU and PTD are required` },
+          { error: `Line ${i + 1}: SKU, purchase rate, and base unit are required` },
           { status: 400 }
         )
       }

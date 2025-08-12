@@ -32,7 +32,7 @@ interface ArticleMaster {
   status: 'Active' | 'Inactive'
   dateAdded: string
   ptdPrice: number
-  lastBillingDate: string
+  expiryWindowDays: number
   safetyStock: number
   moq: number
 }
@@ -65,7 +65,7 @@ export default function AdminPage() {
       status: 'Active',
       dateAdded: '2024-01-15',
       ptdPrice: 180.00,
-      lastBillingDate: '2024-07-30',
+      expiryWindowDays: 365,
       safetyStock: 50,
       moq: 10
     },
@@ -80,7 +80,7 @@ export default function AdminPage() {
       status: 'Active',
       dateAdded: '2024-01-20',
       ptdPrice: 175.00,
-      lastBillingDate: '2024-07-28',
+      expiryWindowDays: 365,
       safetyStock: 45,
       moq: 8
     },
@@ -95,7 +95,7 @@ export default function AdminPage() {
       status: 'Active',
       dateAdded: '2024-02-01',
       ptdPrice: 240.00,
-      lastBillingDate: '2024-07-29',
+      expiryWindowDays: 180,
       safetyStock: 60,
       moq: 12
     },
@@ -110,7 +110,7 @@ export default function AdminPage() {
       status: 'Active',
       dateAdded: '2024-02-05',
       ptdPrice: 45.00,
-      lastBillingDate: '2024-07-25',
+      expiryWindowDays: 270,
       safetyStock: 80,
       moq: 15
     },
@@ -125,7 +125,7 @@ export default function AdminPage() {
       status: 'Active',
       dateAdded: '2024-02-10',
       ptdPrice: 35.00,
-      lastBillingDate: '2024-07-26',
+      expiryWindowDays: 365,
       safetyStock: 100,
       moq: 20
     },
@@ -140,7 +140,7 @@ export default function AdminPage() {
       status: 'Active',
       dateAdded: '2024-02-12',
       ptdPrice: 15.00,
-      lastBillingDate: '2024-07-27',
+      expiryWindowDays: 180,
       safetyStock: 150,
       moq: 30
     },
@@ -155,7 +155,7 @@ export default function AdminPage() {
       status: 'Active',
       dateAdded: '2024-02-15',
       ptdPrice: 120.00,
-      lastBillingDate: '2024-07-24',
+      expiryWindowDays: 365,
       safetyStock: 40,
       moq: 8
     },
@@ -170,7 +170,7 @@ export default function AdminPage() {
       status: 'Active',
       dateAdded: '2024-02-18',
       ptdPrice: 85.00,
-      lastBillingDate: '2024-07-23',
+      expiryWindowDays: 270,
       safetyStock: 70,
       moq: 14
     }
@@ -247,9 +247,9 @@ export default function AdminPage() {
     // In a real implementation, this would download the master data
     console.log('Downloading master data...')
     const csvContent = "data:text/csv;charset=utf-8," + 
-      "Article ID,Article Name,Category,Sub Category,Base Unit,EA per Case,Status,Date Added,PTD Price,Last Billing Date,Safety Stock,MOQ\n" +
+      "Article ID,Article Name,Category,Sub Category,Base Unit,EA per Case,Status,Date Added,PTD Price,Expiry Window (Days),Safety Stock,MOQ\n" +
       articles.map(article => 
-        `${article.articleId},${article.articleName},${article.category},${article.subCategory},${article.baseUnit},${article.eaPerCase},${article.status},${article.dateAdded},${article.ptdPrice},${article.lastBillingDate},${article.safetyStock},${article.moq}`
+        `${article.articleId},${article.articleName},${article.category},${article.subCategory},${article.baseUnit},${article.eaPerCase},${article.status},${article.dateAdded},${article.ptdPrice},${article.expiryWindowDays},${article.safetyStock},${article.moq}`
       ).join("\n")
     
     const link = document.createElement("a")
@@ -397,9 +397,9 @@ export default function AdminPage() {
                   <th className="text-left py-3 px-4 font-medium text-gray-700" title="Number of individual units per case">EA per Case</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700" title="Current status of the article">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700" title="Date when article was added to master data">Date Added</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700" title="Date of last billing transaction">Last Billing</th>
-                                      <th className="text-left py-3 px-4 font-medium text-gray-700" title="Minimum stock level to maintain">Safety Stock</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700" title="Edit or manage article data">Actions</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700" title="Number of days before expiry to start alerts">Expiry Window (Days)</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700" title="Minimum stock level to maintain">Safety Stock</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700" title="Edit or manage article data">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -435,13 +435,13 @@ export default function AdminPage() {
                     <td className="py-3 px-4">
                       {editingId === article.id ? (
                         <Input
-                          type="date"
-                          value={editingData.lastBillingDate || ''}
-                          onChange={(e) => handleEditChange('lastBillingDate', e.target.value)}
+                          type="number"
+                          value={editingData.expiryWindowDays || ''}
+                          onChange={(e) => handleEditChange('expiryWindowDays', parseInt(e.target.value, 10))}
                           className="w-full"
                         />
                       ) : (
-                        new Date(article.lastBillingDate).toLocaleDateString('en-GB')
+                        article.expiryWindowDays
                       )}
                     </td>
                     <td className="py-3 px-4">

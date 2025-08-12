@@ -1,56 +1,87 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface CycleCountMovement {
+  skuId: string;
+  description: string;
+  sellableToExpired: number;
+  expiredToSellable: number;
+  sellableToDamaged: number;
+  damagedToSellable: number;
+  reasonCode?: string;
+  newMfgDate?: string;
+  adjustmentType: 'Gain' | 'Loss' | 'Movement';
+}
+
+interface CycleCountAuditDetails {
+  id: string;
+  sessionId: string;
+  timestamp: string;
+  user: string;
+  fileName: string;
+  totalItems: number;
+  totalAdjustments: number;
+  movementsCount: number;
+  status: 'Completed' | 'Failed' | 'Cancelled';
+  details: CycleCountMovement[];
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const { id } = params;
-    
-    // Mock data - in real implementation, this would fetch from database
-    const auditDetails = {
+
+    // In real implementation, fetch from database based on audit ID
+    // For now, return mock data with the new structure
+    const mockAuditDetails: CycleCountAuditDetails = {
       id,
-      timestamp: '2025-01-30 15:30:25',
-      user: 'manager@company.com',
-      fileName: 'cycle_count_jan_2025.xlsx',
-      varianceSKUs: 15,
-      totalAdjQtyCS: 45,
+      sessionId: '1703123456789',
+      timestamp: '2024-01-15T10:30:00Z',
+      user: 'john.doe@company.com',
+      fileName: 'cycle_count_2024_01_15.xlsx',
+      totalItems: 150,
+      totalAdjustments: 8,
+      movementsCount: 3,
       status: 'Completed',
       details: [
         {
-          sku: 'SKU001',
-          systemQtyCS: 100,
-          systemQtyEA: 12,
-          physicalQtyCS: 98,
-          physicalQtyEA: 8,
-          varianceCS: -2,
-          varianceEA: -4,
-          adjustmentType: 'Loss'
+          skuId: 'SKU002',
+          description: 'Organic Tea Bags 100ct',
+          sellableToExpired: 2,
+          expiredToSellable: 0,
+          sellableToDamaged: 1,
+          damagedToSellable: 0,
+          reasonCode: '1',
+          newMfgDate: '2024-01-01',
+          adjustmentType: 'Movement'
         },
         {
-          sku: 'SKU002',
-          systemQtyCS: 50,
-          systemQtyEA: 0,
-          physicalQtyCS: 52,
-          physicalQtyEA: 0,
-          varianceCS: 2,
-          varianceEA: 0,
+          skuId: 'SKU003',
+          description: 'Chocolate Bars 50g',
+          sellableToExpired: 0,
+          expiredToSellable: 1,
+          sellableToDamaged: 0,
+          damagedToSellable: 0,
+          reasonCode: undefined,
+          newMfgDate: '2024-01-15',
           adjustmentType: 'Gain'
         },
         {
-          sku: 'SKU003',
-          systemQtyCS: 75,
-          systemQtyEA: 6,
-          physicalQtyCS: 73,
-          physicalQtyEA: 2,
-          varianceCS: -2,
-          varianceEA: -4,
-          adjustmentType: 'Loss'
+          skuId: 'SKU004',
+          description: 'Energy Drinks 250ml',
+          sellableToExpired: 0,
+          expiredToSellable: 0,
+          sellableToDamaged: 2,
+          damagedToSellable: 1,
+          reasonCode: '3',
+          newMfgDate: undefined,
+          adjustmentType: 'Movement'
         }
       ]
     };
 
-    return NextResponse.json(auditDetails);
+    return NextResponse.json(mockAuditDetails);
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to fetch audit details' },

@@ -7,8 +7,6 @@ import {
   Plus,
   Search,
   Filter,
-  Edit,
-  Trash2,
   Upload,
   Download,
   AlertTriangle,
@@ -18,7 +16,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
-import { Input } from "@/components/ui/input"
+
 
 export default function InventoryPage() {
   const [showReportsPanel, setShowReportsPanel] = useState(false);
@@ -26,12 +24,7 @@ export default function InventoryPage() {
   const [category, setCategory] = useState("All Categories");
   const [status, setStatus] = useState("All Status");
   const [skuIds, setSkuIds] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editingData, setEditingData] = useState<any>({});
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<{type: 'save' | 'cancel', itemId: number} | null>(null);
+
 
   const inventoryItems = [
     {
@@ -40,10 +33,10 @@ export default function InventoryPage() {
       ean: "8901030875200",
       sku: "SKU001",
       sellableQty: 150,
-      lostQty: 5,
       damagedQty: 10,
       expiredQty: 0,
       blockedQty: 8,
+      routeStock: 25,
       status: "in stock"
     },
     {
@@ -52,10 +45,10 @@ export default function InventoryPage() {
       ean: "8901030875201",
       sku: "SKU002",
       sellableQty: 25,
-      lostQty: 2,
       damagedQty: 5,
       expiredQty: 0,
       blockedQty: 3,
+      routeStock: 8,
       status: "low stock"
     },
     {
@@ -64,10 +57,10 @@ export default function InventoryPage() {
       ean: "8901030875202",
       sku: "SKU003",
       sellableQty: 0,
-      lostQty: 0,
       damagedQty: 0,
       expiredQty: 15,
       blockedQty: 0,
+      routeStock: 0,
       status: "out-of-stock"
     },
     {
@@ -76,10 +69,10 @@ export default function InventoryPage() {
       ean: "8901030875203",
       sku: "SKU004",
       sellableQty: 80,
-      lostQty: 3,
       damagedQty: 7,
       expiredQty: 0,
       blockedQty: 12,
+      routeStock: 15,
       status: "in stock"
     },
     {
@@ -88,10 +81,10 @@ export default function InventoryPage() {
       ean: "8901030875204",
       sku: "SKU005",
       sellableQty: 15,
-      lostQty: 1,
       damagedQty: 2,
       expiredQty: 0,
       blockedQty: 5,
+      routeStock: 3,
       status: "low stock"
     }
   ]
@@ -122,67 +115,13 @@ export default function InventoryPage() {
     }
   }
 
-  // Quick date filter logic (for demo, just sets dateFrom/dateTo to today)
+  // Quick date filter logic (for demo, just logs the selected period)
   const setQuickDate = (type: string) => {
-    const today = new Date();
-    let from = today;
-    let to = today;
-    if (type === "Today") {
-      // today only
-    } else if (type === "This Week") {
-      from = new Date(today);
-      from.setDate(today.getDate() - today.getDay());
-    } else if (type === "This Month") {
-      from = new Date(today.getFullYear(), today.getMonth(), 1);
-    } else if (type === "Last Month") {
-      from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      to = new Date(today.getFullYear(), today.getMonth(), 0);
-    } else if (type === "Last 3 Months") {
-      from = new Date(today.getFullYear(), today.getMonth() - 2, 1);
-    }
-    setDateFrom(from.toISOString().slice(0, 10));
-    setDateTo(to.toISOString().slice(0, 10));
+    console.log('Selected date period:', type);
+    // Here you would typically set the date range for the report
   };
 
-  const handleEdit = (item: any) => {
-    setEditingId(item.id);
-    setEditingData({
-      sellableQty: item.sellableQty,
-      lostQty: item.lostQty,
-      damagedQty: item.damagedQty,
-      expiredQty: item.expiredQty
-    });
-  }
 
-  const handleSave = () => {
-    setConfirmAction({ type: 'save', itemId: editingId! });
-    setShowConfirmModal(true);
-  }
-
-  const handleCancel = () => {
-    setConfirmAction({ type: 'cancel', itemId: editingId! });
-    setShowConfirmModal(true);
-  }
-
-  const confirmActionHandler = () => {
-    if (confirmAction?.type === 'save') {
-      // Simulate saving the data
-      console.log('Saving changes for item:', confirmAction.itemId, editingData);
-      // Here you would typically make an API call to save the data
-    }
-    
-    setEditingId(null);
-    setEditingData({});
-    setShowConfirmModal(false);
-    setConfirmAction(null);
-  }
-
-  const handleEditChange = (field: string, value: string) => {
-    setEditingData((prev: any) => ({
-      ...prev,
-      [field]: parseInt(value) || 0
-    }));
-  }
 
   return (
     <div className="space-y-6">
@@ -193,7 +132,7 @@ export default function InventoryPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -202,18 +141,6 @@ export default function InventoryPage() {
                 <p className="text-2xl font-bold text-blue-600">5</p>
               </div>
               <Package className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Value</p>
-                <p className="text-2xl font-bold text-green-600">₹28K</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -318,27 +245,9 @@ export default function InventoryPage() {
                   onChange={e => setSkuIds(e.target.value)}
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Date From</label>
-                <input
-                  type="date"
-                  className="w-full border rounded-md px-3 py-2"
-                  value={dateFrom}
-                  onChange={e => setDateFrom(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Date To</label>
-                <input
-                  type="date"
-                  className="w-full border rounded-md px-3 py-2"
-                  value={dateTo}
-                  onChange={e => setDateTo(e.target.value)}
-                />
-              </div>
             </div>
             <div className="flex flex-wrap gap-2 mb-4">
-              {['Today', 'This Week', 'This Month', 'Last Month', 'Last 3 Months'].map(label => (
+              {['Today', 'This Week', 'This Month', 'Last Month', 'Last 3 Months', 'This Year'].map(label => (
                 <Button
                   key={label}
                   variant="outline"
@@ -355,15 +264,10 @@ export default function InventoryPage() {
                 setCategory("All Categories");
                 setStatus("All Status");
                 setSkuIds("");
-                setDateFrom("");
-                setDateTo("");
               }}>Reset Filters</Button>
-              <Button variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                Download Excel
-              </Button>
               <Button variant="jiomart">
-                Generate Report
+                <Download className="mr-2 h-4 w-4" />
+                Download Excel Report
               </Button>
             </div>
           </div>
@@ -393,13 +297,13 @@ export default function InventoryPage() {
               <thead>
                   <tr className="bg-gray-100">
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Product Name + EAN Code / SKU ID</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-800">Sellable Quantity</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-800">Lost Quantity</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-800">Damaged Quantity</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-800">Expired Quantity</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-800">Blocked Quantity</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-800">Inventory in Hand</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-800">Sellable Stock</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-800">Allocated Stock</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-800">On Route Stock</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-800">Expired Stock</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-800">Damaged Stock</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-800">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -416,64 +320,22 @@ export default function InventoryPage() {
                       </div>
                     </td>
                       <td className="py-3 px-4">
-                        {editingId === item.id ? (
-                          <Input
-                            type="number"
-                            value={editingData.sellableQty || 0}
-                            onChange={(e) => handleEditChange('sellableQty', e.target.value)}
-                            className="w-20 text-green-600 font-medium"
-                          />
-                        ) : (
-                          <span className="text-green-600 font-medium">{item.sellableQty}</span>
-                        )}
+                        <span className="text-blue-600 font-medium">{item.sellableQty + item.routeStock + item.expiredQty + item.damagedQty + item.blockedQty}</span>
                       </td>
                       <td className="py-3 px-4">
-                        {editingId === item.id ? (
-                          <Input
-                            type="number"
-                            value={editingData.lostQty || 0}
-                            onChange={(e) => handleEditChange('lostQty', e.target.value)}
-                            className="w-20 text-red-600 font-medium"
-                          />
-                        ) : (
-                          <span className="text-red-600 font-medium">{item.lostQty}</span>
-                        )}
+                        <span className="text-green-600 font-medium">{item.sellableQty}</span>
                       </td>
                       <td className="py-3 px-4">
-                        {editingId === item.id ? (
-                          <Input
-                            type="number"
-                            value={editingData.damagedQty || 0}
-                            onChange={(e) => handleEditChange('damagedQty', e.target.value)}
-                            className="w-20 text-orange-600 font-medium"
-                          />
-                        ) : (
-                          <span className="text-orange-600 font-medium">{item.damagedQty}</span>
-                        )}
+                        <span className="text-purple-600 font-medium">{item.blockedQty}</span>
                       </td>
                       <td className="py-3 px-4">
-                        {editingId === item.id ? (
-                          <Input
-                            type="number"
-                            value={editingData.expiredQty || 0}
-                            onChange={(e) => handleEditChange('expiredQty', e.target.value)}
-                            className="w-20 text-gray-600 font-medium"
-                          />
-                        ) : (
-                          <span className="text-gray-600 font-medium">{item.expiredQty}</span>
-                        )}
+                        <span className="text-blue-600 font-medium">{item.routeStock}</span>
                       </td>
                       <td className="py-3 px-4">
-                        {editingId === item.id ? (
-                          <Input
-                            type="number"
-                            value={editingData.blockedQty || 0}
-                            onChange={(e) => handleEditChange('blockedQty', e.target.value)}
-                            className="w-20 text-purple-600 font-medium"
-                          />
-                        ) : (
-                          <span className="text-purple-600 font-medium">{item.blockedQty}</span>
-                        )}
+                        <span className="text-gray-600 font-medium">{item.expiredQty}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-orange-600 font-medium">{item.damagedQty}</span>
                       </td>
                     <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
@@ -481,29 +343,7 @@ export default function InventoryPage() {
                           <span className="text-sm font-medium">{getStatusText(item.status)}</span>
                         </div>
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex gap-2">
-                        {editingId === item.id ? (
-                          <>
-                            <Button size="sm" variant="jiomart" onClick={handleSave}>
-                              Save
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={handleCancel}>
-                              Cancel
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button size="sm" variant="outline" onClick={() => handleEdit(item)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="outline">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </td>
+
                   </tr>
                 ))}
               </tbody>
@@ -525,39 +365,7 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">
-              {confirmAction?.type === 'save' ? 'Confirm Save Changes' : 'Confirm Cancel'}
-            </h3>
-            <p className="text-gray-600 mb-6">
-              {confirmAction?.type === 'save' 
-                ? 'Are you sure you want to save these changes? This action cannot be undone.'
-                : 'Are you sure you want to cancel? All unsaved changes will be lost.'
-              }
-            </p>
-            <div className="flex gap-3 justify-end">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setShowConfirmModal(false);
-                  setConfirmAction(null);
-                }}
-              >
-                No, Keep Editing
-              </Button>
-              <Button 
-                variant="jiomart" 
-                onClick={confirmActionHandler}
-              >
-                {confirmAction?.type === 'save' ? 'Yes, Save Changes' : 'Yes, Cancel'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   )
 } 

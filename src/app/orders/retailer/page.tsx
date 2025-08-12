@@ -20,7 +20,10 @@ import {
   Play,
   History,
   CheckSquare,
-  Square
+  Square,
+  Truck,
+  Package,
+  Ban
 } from "lucide-react"
 import Link from "next/link"
 
@@ -47,11 +50,13 @@ interface RetailerOrder {
   orderValue: string
   orderQuantity: number
   selected: boolean
+  loadOutNumber?: string
+  manufacturingDate?: string
   processingLogs: ProcessingLog[]
 }
 
 export default function RetailerOrdersPage() {
-  const [activeCategory, setActiveCategory] = useState<'all' | 'pending' | 'accepted' | 'accepted_processed' | 'accepted_unprocessed' | 'rejected' | 'offline'>('all')
+  const [activeCategory, setActiveCategory] = useState<'all' | 'pending' | 'allocated' | 'dispatched' | 'rejected' | 'cancelled' | 'offline'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -63,6 +68,19 @@ export default function RetailerOrdersPage() {
   const [showCloseOrderModal, setShowCloseOrderModal] = useState(false)
   const [closeReason, setCloseReason] = useState('')
   const [selectedCloseReason, setSelectedCloseReason] = useState('')
+  const [showModifyOrderModal, setShowModifyOrderModal] = useState(false)
+  const [showDispatchModal, setShowDispatchModal] = useState(false)
+  const [modifyOrderData, setModifyOrderData] = useState<{
+    orderId: string
+    skus: Array<{
+      skuId: string
+      skuName: string
+      originalQuantity: number
+      currentQuantity: number
+      action: 'keep' | 'remove' | 'modify'
+      reason?: string
+    }>
+  } | null>(null)
 
   // Handle URL parameters for tab switching
   useEffect(() => {
@@ -70,7 +88,7 @@ export default function RetailerOrdersPage() {
       const urlParams = new URLSearchParams(window.location.search)
       const tabParam = urlParams.get('tab')
       
-      if (tabParam && ['all', 'pending', 'accepted', 'accepted_processed', 'accepted_unprocessed', 'rejected', 'offline'].includes(tabParam)) {
+      if (tabParam && ['all', 'pending', 'allocated', 'dispatched', 'rejected', 'cancelled', 'offline'].includes(tabParam)) {
         setActiveCategory(tabParam as any)
       }
     }
@@ -84,27 +102,28 @@ export default function RetailerOrdersPage() {
       fosName: "John Smith",
       retailerId: "RET001",
       retailerName: "ABC Store",
-      status: "accepted",
-      processingStatus: "confirmed_not_dispatched",
+      status: "allocated",
+      processingStatus: "fully_allocated",
       orderValue: "₹12,500",
       orderQuantity: 25,
       selected: false,
+      manufacturingDate: "2024-01-10",
       processingLogs: [
         {
           id: "1",
           orderId: "RO-2024-001",
-          action: "Order Accepted",
-          status: "accepted",
+          action: "Order Received",
+          status: "pending",
           timestamp: "2024-01-15 10:30:00",
           userId: "RETAILER001"
         },
         {
           id: "2",
           orderId: "RO-2024-001",
-          action: "Order Confirmed",
-          status: "confirmed",
+          action: "Order Allocated",
+          status: "allocated",
           timestamp: "2024-01-15 14:20:00",
-          userId: "RETAILER001"
+          userId: "SYSTEM"
         }
       ]
     },
@@ -116,7 +135,7 @@ export default function RetailerOrdersPage() {
       retailerId: "RET002",
       retailerName: "XYZ Mart",
       status: "pending",
-      processingStatus: "pending",
+      processingStatus: "pending_review",
       orderValue: "₹8,900",
       orderQuantity: 18,
       selected: false,
@@ -131,7 +150,7 @@ export default function RetailerOrdersPage() {
       retailerName: "Premium Shop",
       status: "rejected",
       processingStatus: "rejected",
-      unprocessedReason: "Stock Out",
+      unprocessedReason: "Out of Stock",
       orderValue: "₹15,200",
       orderQuantity: 32,
       selected: false,
@@ -141,9 +160,9 @@ export default function RetailerOrdersPage() {
           orderId: "RO-2024-003",
           action: "Order Rejected",
           status: "rejected",
-          reason: "Stock Out",
+          reason: "Out of Stock",
           timestamp: "2024-01-17 09:15:00",
-          userId: "RETAILER003"
+          userId: "DISTRIBUTOR001"
         }
       ]
     },
@@ -154,97 +173,29 @@ export default function RetailerOrdersPage() {
       fosName: "John Smith",
       retailerId: "RET004",
       retailerName: "City Store",
-      status: "accepted",
-      processingStatus: "confirmed_not_dispatched",
+      status: "dispatched",
+      processingStatus: "dispatched",
       orderValue: "₹9,800",
       orderQuantity: 20,
       selected: false,
+      loadOutNumber: "LO-2024-001",
+      manufacturingDate: "2024-01-12",
       processingLogs: [
         {
           id: "4",
           orderId: "RO-2024-004",
-          action: "Order Accepted",
-          status: "accepted",
+          action: "Order Allocated",
+          status: "allocated",
           timestamp: "2024-01-18 11:45:00",
-          userId: "RETAILER004"
-        }
-      ]
-    },
-    {
-      id: "RO-2024-007",
-      orderDate: "2024-01-21",
-      fosId: "FOS003",
-      fosName: "Mike Wilson",
-      retailerId: "RET007",
-      retailerName: "Express Mart",
-      status: "accepted",
-      processingStatus: "auto_processed",
-      orderValue: "₹14,200",
-      orderQuantity: 35,
-      selected: false,
-      processingLogs: [
+          userId: "SYSTEM"
+        },
         {
           id: "5",
-          orderId: "RO-2024-007",
-          action: "Order Accepted",
-          status: "accepted",
-          timestamp: "2024-01-21 09:30:00",
-          userId: "RETAILER007"
-        },
-        {
-          id: "6",
-          orderId: "RO-2024-007",
-          action: "Order Confirmed",
-          status: "confirmed",
-          timestamp: "2024-01-21 10:15:00",
-          userId: "RETAILER007"
-        },
-        {
-          id: "7",
-          orderId: "RO-2024-007",
-          action: "Auto Processed",
-          status: "auto_processed",
-          timestamp: "2024-01-21 14:20:00",
-          userId: "SYSTEM"
-        }
-      ]
-    },
-    {
-      id: "RO-2024-008",
-      orderDate: "2024-01-22",
-      fosId: "FOS002",
-      fosName: "Sarah Johnson",
-      retailerId: "RET008",
-      retailerName: "Quick Shop",
-      status: "accepted",
-      processingStatus: "auto_processed",
-      orderValue: "₹7,600",
-      orderQuantity: 12,
-      selected: false,
-      processingLogs: [
-        {
-          id: "8",
-          orderId: "RO-2024-008",
-          action: "Order Accepted",
-          status: "accepted",
-          timestamp: "2024-01-22 08:45:00",
-          userId: "RETAILER008"
-        },
-        {
-          id: "9",
-          orderId: "RO-2024-008",
-          action: "Order Confirmed",
-          status: "confirmed",
-          timestamp: "2024-01-22 09:30:00",
-          userId: "RETAILER008"
-        },
-        {
-          id: "10",
-          orderId: "RO-2024-008",
-          action: "Auto Processed",
-          status: "auto_processed",
-          timestamp: "2024-01-22 11:15:00",
-          userId: "SYSTEM"
+          orderId: "RO-2024-004",
+          action: "Order Dispatched",
+          status: "dispatched",
+          timestamp: "2024-01-18 15:30:00",
+          userId: "DISTRIBUTOR001"
         }
       ]
     },
@@ -256,7 +207,7 @@ export default function RetailerOrdersPage() {
       retailerId: "RET005",
       retailerName: "Corner Shop",
       status: "offline",
-      processingStatus: "offline",
+      processingStatus: "billed",
       orderValue: "₹6,500",
       orderQuantity: 15,
       selected: false,
@@ -269,12 +220,62 @@ export default function RetailerOrdersPage() {
       fosName: "Sarah Johnson",
       retailerId: "RET006",
       retailerName: "Super Market",
-      status: "pending",
-      processingStatus: "pending",
+      status: "cancelled",
+      processingStatus: "cancelled",
+      unprocessedReason: "Undelivered",
       orderValue: "₹11,300",
       orderQuantity: 28,
       selected: false,
-      processingLogs: []
+      processingLogs: [
+        {
+          id: "6",
+          orderId: "RO-2024-006",
+          action: "Order Dispatched",
+          status: "dispatched",
+          timestamp: "2024-01-20 10:00:00",
+          userId: "DISTRIBUTOR001"
+        },
+        {
+          id: "7",
+          orderId: "RO-2024-006",
+          action: "Order Cancelled",
+          status: "cancelled",
+          reason: "Undelivered",
+          timestamp: "2024-01-20 16:00:00",
+          userId: "DISTRIBUTOR001"
+        }
+      ]
+    },
+    {
+      id: "RO-2024-007",
+      orderDate: "2024-01-21",
+      fosId: "FOS003",
+      fosName: "Mike Wilson",
+      retailerId: "RET007",
+      retailerName: "Express Mart",
+      status: "pending",
+      processingStatus: "partial_inventory",
+      orderValue: "₹14,200",
+      orderQuantity: 35,
+      selected: false,
+      processingLogs: [
+        {
+          id: "8",
+          orderId: "RO-2024-007",
+          action: "Order Received",
+          status: "pending",
+          timestamp: "2024-01-21 09:30:00",
+          userId: "RETAILER007"
+        },
+        {
+          id: "9",
+          orderId: "RO-2024-007",
+          action: "Partial Inventory Detected",
+          status: "partial_inventory",
+          timestamp: "2024-01-21 10:15:00",
+          userId: "SYSTEM"
+        }
+      ]
     }
   ]
 
@@ -282,12 +283,6 @@ export default function RetailerOrdersPage() {
     let matchesCategory = false
     if (activeCategory === 'all') {
       matchesCategory = true
-    } else if (activeCategory === 'accepted') {
-      matchesCategory = order.status === 'accepted'
-    } else if (activeCategory === 'accepted_processed') {
-      matchesCategory = order.status === 'accepted' && order.processingStatus === 'auto_processed'
-    } else if (activeCategory === 'accepted_unprocessed') {
-      matchesCategory = order.status === 'accepted' && order.processingStatus === 'confirmed_not_dispatched'
     } else {
       matchesCategory = order.status === activeCategory
     }
@@ -305,26 +300,30 @@ export default function RetailerOrdersPage() {
   })
 
   const categories = [
-    { key: 'all', label: 'All Orders', count: retailerOrders.length },
-    { key: 'pending', label: 'Pending Orders', count: retailerOrders.filter(o => o.status === 'pending').length },
-    { key: 'accepted', label: 'Accepted Orders', count: retailerOrders.filter(o => o.status === 'accepted').length },
-    { key: 'accepted_processed', label: 'Processed Orders', count: retailerOrders.filter(o => o.status === 'accepted' && o.processingStatus === 'auto_processed').length },
-    { key: 'accepted_unprocessed', label: 'Unprocessed Orders', count: retailerOrders.filter(o => o.status === 'accepted' && o.processingStatus === 'confirmed_not_dispatched').length },
-    { key: 'rejected', label: 'Rejected Orders', count: retailerOrders.filter(o => o.status === 'rejected').length },
-    { key: 'offline', label: 'Offline Orders', count: retailerOrders.filter(o => o.status === 'offline').length }
+    { key: 'all', label: 'All Orders', count: retailerOrders.length, icon: ShoppingCart },
+    { key: 'pending', label: 'Pending Orders', count: retailerOrders.filter(o => o.status === 'pending').length, icon: Clock },
+    { key: 'allocated', label: 'Allocated Orders', count: retailerOrders.filter(o => o.status === 'allocated').length, icon: Package },
+    { key: 'dispatched', label: 'Order Dispatched', count: retailerOrders.filter(o => o.status === 'dispatched').length, icon: Truck },
+    { key: 'rejected', label: 'Rejected Orders', count: retailerOrders.filter(o => o.status === 'rejected').length, icon: XCircle },
+    { key: 'cancelled', label: 'Orders Cancelled', count: retailerOrders.filter(o => o.status === 'cancelled').length, icon: Ban },
+    { key: 'offline', label: 'Offline Orders', count: retailerOrders.filter(o => o.status === 'offline').length, icon: FileText }
   ]
 
   const getStatusBadge = (status: string) => {
     const baseClasses = "px-2 py-1 rounded-full text-xs font-medium"
     switch (status) {
-      case "accepted":
-        return `${baseClasses} bg-green-100 text-green-800`
+      case "allocated":
+        return `${baseClasses} bg-blue-100 text-blue-800`
       case "pending":
         return `${baseClasses} bg-yellow-100 text-yellow-800`
+      case "dispatched":
+        return `${baseClasses} bg-green-100 text-green-800`
       case "rejected":
         return `${baseClasses} bg-red-100 text-red-800`
+      case "cancelled":
+        return `${baseClasses} bg-gray-100 text-gray-800`
       case "offline":
-        return `${baseClasses} bg-blue-100 text-blue-800`
+        return `${baseClasses} bg-purple-100 text-purple-800`
       default:
         return `${baseClasses} bg-gray-100 text-gray-800`
     }
@@ -333,14 +332,20 @@ export default function RetailerOrdersPage() {
   const getProcessingStatusBadge = (status: string) => {
     const baseClasses = "px-2 py-1 rounded-full text-xs font-medium"
     switch (status) {
-      case "confirmed_not_dispatched":
+      case "fully_allocated":
+        return `${baseClasses} bg-blue-100 text-blue-800`
+      case "partial_allocated":
         return `${baseClasses} bg-orange-100 text-orange-800`
-      case "auto_processed":
-        return `${baseClasses} bg-green-100 text-green-800`
-      case "stock_out":
-        return `${baseClasses} bg-red-100 text-red-800`
-      case "partial_dispatch":
+      case "pending_review":
         return `${baseClasses} bg-yellow-100 text-yellow-800`
+      case "partial_inventory":
+        return `${baseClasses} bg-orange-100 text-orange-800`
+      case "dispatched":
+        return `${baseClasses} bg-green-100 text-green-800`
+      case "billed":
+        return `${baseClasses} bg-purple-100 text-purple-800`
+      case "rejected":
+        return `${baseClasses} bg-red-100 text-red-800`
       case "cancelled":
         return `${baseClasses} bg-gray-100 text-gray-800`
       default:
@@ -357,10 +362,17 @@ export default function RetailerOrdersPage() {
   }
 
   const selectAllOrders = () => {
-    const unprocessedOrderIds = filteredOrders
-      .filter(order => order.status === 'accepted' && order.processingStatus === 'confirmed_not_dispatched')
+    const selectableOrderIds = filteredOrders
+      .filter(order => {
+        if (activeCategory === 'pending') {
+          return order.status === 'pending'
+        } else if (activeCategory === 'allocated') {
+          return order.status === 'allocated'
+        }
+        return false
+      })
       .map(order => order.id)
-    setSelectedOrders(unprocessedOrderIds)
+    setSelectedOrders(selectableOrderIds)
   }
 
   const clearSelection = () => {
@@ -372,6 +384,69 @@ export default function RetailerOrdersPage() {
     console.log("Auto processing orders:", selectedOrders)
     setSelectedOrders([])
     setShowProcessingModal(false)
+  }
+
+  const handleModifyOrder = () => {
+    // Get the first selected order for modification (in real app, you might want to handle multiple)
+    const orderToModify = retailerOrders.find(o => o.id === selectedOrders[0])
+    if (!orderToModify) return
+
+    // Initialize modification data with sample SKUs (in real app, this would come from the order)
+    const sampleSkus = [
+      { skuId: 'SKU001', skuName: 'Product A', originalQuantity: 10, currentQuantity: 10, action: 'keep' as const },
+      { skuId: 'SKU002', skuName: 'Product B', originalQuantity: 5, currentQuantity: 5, action: 'keep' as const },
+      { skuId: 'SKU003', skuName: 'Product C', originalQuantity: 8, currentQuantity: 8, action: 'keep' as const }
+    ]
+
+    setModifyOrderData({
+      orderId: orderToModify.id,
+      skus: sampleSkus
+    })
+  }
+
+  const updateSkuAction = (skuId: string, action: 'keep' | 'remove' | 'modify', quantity?: number, reason?: string) => {
+    if (!modifyOrderData) return
+
+    setModifyOrderData(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        skus: prev.skus.map(sku => 
+          sku.skuId === skuId 
+            ? { 
+                ...sku, 
+                action, 
+                currentQuantity: quantity || sku.currentQuantity,
+                reason: reason || sku.reason
+              }
+            : sku
+        )
+      }
+    })
+  }
+
+  const handleSaveModifications = () => {
+    if (!modifyOrderData) return
+
+    // In a real app, this would save the modifications to the backend
+    console.log("Saving modifications:", modifyOrderData)
+    
+    // Add processing log entry
+    const modifications = modifyOrderData.skus.filter(sku => sku.action !== 'keep')
+    if (modifications.length > 0) {
+      console.log("Modifications made:", modifications)
+    }
+
+    setModifyOrderData(null)
+    setShowModifyOrderModal(false)
+    setSelectedOrders([])
+  }
+
+  const handleDispatchOrders = () => {
+    // In a real app, this would dispatch the selected orders and generate load out numbers
+    console.log("Dispatching orders:", selectedOrders)
+    setSelectedOrders([])
+    setShowDispatchModal(false)
   }
 
   const handleCloseOrder = (orderId: string, reason: string) => {
@@ -416,17 +491,8 @@ export default function RetailerOrdersPage() {
     window.URL.revokeObjectURL(url)
   }
 
-  const acceptedOrdersCount = filteredOrders.filter(order => 
-    order.status === 'accepted' && order.processingStatus === 'confirmed_not_dispatched'
-  ).length
-
-  const processedOrdersCount = retailerOrders.filter(order => 
-    order.status === 'accepted' && order.processingStatus === 'auto_processed'
-  ).length
-
-  const unprocessedOrdersCount = retailerOrders.filter(order => 
-    order.status === 'accepted' && order.processingStatus === 'confirmed_not_dispatched'
-  ).length
+  const pendingOrdersCount = filteredOrders.filter(order => order.status === 'pending').length
+  const allocatedOrdersCount = filteredOrders.filter(order => order.status === 'allocated').length
 
   return (
     <div className="space-y-6 p-6">
@@ -463,19 +529,19 @@ export default function RetailerOrdersPage() {
         </div>
       </div>
 
-      {/* Processing Actions for Unprocessed Orders */}
-      {acceptedOrdersCount > 0 && (
+      {/* Pending Orders Actions */}
+      {activeCategory === 'pending' && pendingOrdersCount > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              Unprocessed Orders Actions
+              <Clock className="h-5 w-5 text-yellow-600" />
+              Pending Orders Actions
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600">
-                {acceptedOrdersCount} unprocessed orders ready for action
+                {pendingOrdersCount} pending orders ready for review
               </div>
               <div className="flex gap-2">
                 <Button
@@ -505,13 +571,16 @@ export default function RetailerOrdersPage() {
                   Auto Process ({selectedOrders.length})
                 </Button>
                 <Button
-                  onClick={() => setShowCloseOrderModal(true)}
+                  onClick={() => {
+                    handleModifyOrder()
+                    setShowModifyOrderModal(true)
+                  }}
                   disabled={selectedOrders.length === 0}
                   variant="outline"
-                  className="border-red-600 text-red-600 hover:bg-red-50"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
                 >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Close Orders ({selectedOrders.length})
+                  <Package className="h-4 w-4 mr-2" />
+                  Modify Orders ({selectedOrders.length})
                 </Button>
               </div>
             </div>
@@ -519,41 +588,48 @@ export default function RetailerOrdersPage() {
         </Card>
       )}
 
-      {/* Accepted Orders Summary */}
-      {(processedOrdersCount > 0 || unprocessedOrdersCount > 0) && (
+      {/* Allocated Orders Actions */}
+      {activeCategory === 'allocated' && allocatedOrdersCount > 0 && (
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <CheckCircle className="h-4 w-4 text-blue-600" />
-              <h3 className="font-medium text-gray-900">Accepted Orders Summary</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <button
-                onClick={() => setActiveCategory('accepted_processed')}
-                className="bg-green-50 p-3 rounded-lg hover:bg-green-100 transition-colors cursor-pointer border border-green-200"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="font-medium text-green-800 text-sm">Processed</span>
-                  </div>
-                  <span className="text-xl font-bold text-green-600">{processedOrdersCount}</span>
-                </div>
-                <p className="text-xs text-green-600 text-left">Successfully processed and dispatched</p>
-              </button>
-              <button
-                onClick={() => setActiveCategory('accepted_unprocessed')}
-                className="bg-orange-50 p-3 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer border border-orange-200"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-orange-600" />
-                    <span className="font-medium text-orange-800 text-sm">Unprocessed</span>
-                  </div>
-                  <span className="text-xl font-bold text-orange-600">{unprocessedOrdersCount}</span>
-                </div>
-                <p className="text-xs text-orange-600 text-left">Confirmed but not yet dispatched</p>
-              </button>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-blue-600" />
+              Allocated Orders Actions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                {allocatedOrdersCount} allocated orders ready for dispatch
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={selectAllOrders}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <CheckSquare className="h-4 w-4" />
+                  Select All
+                </Button>
+                <Button
+                  onClick={clearSelection}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Square className="h-4 w-4" />
+                  Clear Selection
+                </Button>
+                <Button
+                  onClick={() => setShowDispatchModal(true)}
+                  disabled={selectedOrders.length === 0}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Truck className="h-4 w-4 mr-2" />
+                  Dispatch Orders ({selectedOrders.length})
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -561,19 +637,23 @@ export default function RetailerOrdersPage() {
 
       {/* Order Categories */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg overflow-x-auto">
-        {categories.map((category) => (
-          <button
-            key={category.key}
-            onClick={() => setActiveCategory(category.key as any)}
-            className={`py-2 px-4 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-              activeCategory === category.key
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            {category.label} ({category.count})
-          </button>
-        ))}
+        {categories.map((category) => {
+          const IconComponent = category.icon
+          return (
+            <button
+              key={category.key}
+              onClick={() => setActiveCategory(category.key as any)}
+              className={`py-2 px-4 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+                activeCategory === category.key
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <IconComponent className="h-4 w-4" />
+              {category.label} ({category.count})
+            </button>
+          )
+        })}
       </div>
 
       {/* Search and Filters */}
@@ -614,9 +694,11 @@ export default function RetailerOrdersPage() {
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option>All Status</option>
-            <option>Accepted</option>
             <option>Pending</option>
+            <option>Allocated</option>
+            <option>Dispatched</option>
             <option>Rejected</option>
+            <option>Cancelled</option>
             <option>Offline</option>
           </select>
         </div>
@@ -630,10 +712,12 @@ export default function RetailerOrdersPage() {
               <thead>
                 <tr className="border-b bg-gray-50">
                   <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    {acceptedOrdersCount > 0 && (
+                    {(activeCategory === 'pending' || activeCategory === 'allocated') && (
                       <input
                         type="checkbox"
-                        checked={selectedOrders.length === acceptedOrdersCount}
+                        checked={selectedOrders.length === filteredOrders.filter(o => 
+                          activeCategory === 'pending' ? o.status === 'pending' : o.status === 'allocated'
+                        ).length}
                         onChange={(e) => e.target.checked ? selectAllOrders() : clearSelection()}
                         className="rounded border-gray-300"
                       />
@@ -647,6 +731,8 @@ export default function RetailerOrdersPage() {
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Retailer Name</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Processing Status</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Load Out #</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Manufacturing Date</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Order Value</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Order Quantity</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Actions</th>
@@ -656,7 +742,7 @@ export default function RetailerOrdersPage() {
                 {filteredOrders.map((order, index) => (
                   <tr key={order.id} className="border-b hover:bg-gray-50">
                     <td className="py-3 px-4">
-                      {order.status === 'accepted' && order.processingStatus === 'confirmed_not_dispatched' && (
+                      {(order.status === 'pending' || order.status === 'allocated') && (
                         <input
                           type="checkbox"
                           checked={selectedOrders.includes(order.id)}
@@ -681,6 +767,8 @@ export default function RetailerOrdersPage() {
                         {order.processingStatus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </span>
                     </td>
+                    <td className="py-3 px-4 text-gray-900">{order.loadOutNumber || '-'}</td>
+                    <td className="py-3 px-4 text-gray-900">{order.manufacturingDate || '-'}</td>
                     <td className="py-3 px-4 font-medium text-gray-900">{order.orderValue}</td>
                     <td className="py-3 px-4 text-gray-900">{order.orderQuantity}</td>
                     <td className="py-3 px-4">
@@ -730,7 +818,10 @@ export default function RetailerOrdersPage() {
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">Auto Process Orders</h2>
             <p className="text-gray-600 mb-4">
-              Are you sure you want to auto-process {selectedOrders.length} selected orders?
+              Are you sure you want to auto-process {selectedOrders.length} selected pending orders?
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              This will check inventory availability and process orders accordingly.
             </p>
             <div className="flex justify-end gap-2">
               <Button
@@ -750,65 +841,207 @@ export default function RetailerOrdersPage() {
         </div>
       )}
 
-      {/* Close Orders Modal */}
-      {showCloseOrderModal && (
+      {/* Modify Orders Modal */}
+      {showModifyOrderModal && modifyOrderData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Close Orders</h2>
-            <p className="text-gray-600 mb-4">
-              You are about to close {selectedOrders.length} selected orders. Please select a reason:
-            </p>
-            <div className="space-y-3 mb-4">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  name="closeReason"
-                  value="Stock Out"
-                  checked={closeReason === 'Stock Out'}
-                  onChange={(e) => setCloseReason(e.target.value)}
-                  className="text-red-600"
-                />
-                <span className="text-red-600 font-medium">Stock Out</span>
-              </label>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  name="closeReason"
-                  value="Partial Dispatch"
-                  checked={closeReason === 'Partial Dispatch'}
-                  onChange={(e) => setCloseReason(e.target.value)}
-                  className="text-yellow-600"
-                />
-                <span className="text-yellow-600 font-medium">Partial Dispatch</span>
-              </label>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  name="closeReason"
-                  value="Cancelled - Retailer Refused"
-                  checked={closeReason === 'Cancelled - Retailer Refused'}
-                  onChange={(e) => setCloseReason(e.target.value)}
-                  className="text-gray-600"
-                />
-                <span className="text-gray-600 font-medium">Cancelled - Retailer Refused</span>
-              </label>
-            </div>
-            <div className="flex justify-end gap-2">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">Modify Order - {modifyOrderData.orderId}</h2>
               <Button
                 onClick={() => {
-                  setShowCloseOrderModal(false)
-                  setCloseReason('')
+                  setShowModifyOrderModal(false)
+                  setModifyOrderData(null)
                 }}
+                variant="outline"
+                size="sm"
+              >
+                Close
+              </Button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Instructions */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-medium text-blue-900 mb-2">Modification Instructions</h3>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• <strong>Keep:</strong> Maintain original quantity</li>
+                  <li>• <strong>Modify:</strong> Change quantity (requires reason code)</li>
+                  <li>• <strong>Remove:</strong> Remove SKU entirely (requires reason code)</li>
+                  <li>• Reason codes: "Out of Stock", "Customer Declined", "Quality Issue", "Pricing Issue"</li>
+                </ul>
+              </div>
+
+              {/* SKU Modification Table */}
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">SKU ID</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Product Name</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Original Qty</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Action</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">New Qty</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Reason Code</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {modifyOrderData.skus.map((sku, index) => (
+                      <tr key={sku.skuId} className="border-t">
+                        <td className="py-3 px-4 text-gray-900">{sku.skuId}</td>
+                        <td className="py-3 px-4 text-gray-900">{sku.skuName}</td>
+                        <td className="py-3 px-4 text-gray-900">{sku.originalQuantity}</td>
+                        <td className="py-3 px-4">
+                          <select
+                            value={sku.action}
+                            onChange={(e) => updateSkuAction(sku.skuId, e.target.value as 'keep' | 'remove' | 'modify')}
+                            className="px-2 py-1 border border-gray-300 rounded text-sm"
+                          >
+                            <option value="keep">Keep</option>
+                            <option value="modify">Modify</option>
+                            <option value="remove">Remove</option>
+                          </select>
+                        </td>
+                        <td className="py-3 px-4">
+                          {sku.action === 'modify' ? (
+                            <input
+                              type="number"
+                              min="0"
+                              max={sku.originalQuantity}
+                              value={sku.currentQuantity}
+                              onChange={(e) => updateSkuAction(sku.skuId, 'modify', parseInt(e.target.value) || 0)}
+                              className="px-2 py-1 border border-gray-300 rounded text-sm w-20"
+                            />
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          {(sku.action === 'modify' || sku.action === 'remove') ? (
+                            <select
+                              value={sku.reason || ''}
+                              onChange={(e) => updateSkuAction(sku.skuId, sku.action, sku.currentQuantity, e.target.value)}
+                              className="px-2 py-1 border border-gray-300 rounded text-sm"
+                            >
+                              <option value="">Select Reason</option>
+                              <option value="Out of Stock">Out of Stock</option>
+                              <option value="Customer Declined">Customer Declined</option>
+                              <option value="Quality Issue">Quality Issue</option>
+                              <option value="Pricing Issue">Pricing Issue</option>
+                            </select>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Add Replacement SKU */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-medium text-gray-900 mb-3">Add Replacement SKU</h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <input
+                    type="text"
+                    placeholder="SKU ID"
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Product Name"
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Quantity"
+                    min="1"
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <Button variant="outline" size="sm">
+                    Add SKU
+                  </Button>
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-medium text-gray-900 mb-2">Modification Summary</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Total SKUs:</span>
+                    <span className="ml-2 font-medium">{modifyOrderData.skus.length}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Modified:</span>
+                    <span className="ml-2 font-medium text-blue-600">
+                      {modifyOrderData.skus.filter(s => s.action === 'modify').length}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Removed:</span>
+                    <span className="ml-2 font-medium text-red-600">
+                      {modifyOrderData.skus.filter(s => s.action === 'remove').length}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Kept:</span>
+                    <span className="ml-2 font-medium text-green-600">
+                      {modifyOrderData.skus.filter(s => s.action === 'keep').length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button
+                  onClick={() => {
+                    setShowModifyOrderModal(false)
+                    setModifyOrderData(null)
+                  }}
+                  variant="outline"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveModifications}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  disabled={modifyOrderData.skus.some(sku => 
+                    (sku.action === 'modify' || sku.action === 'remove') && !sku.reason
+                  )}
+                >
+                  Save Modifications
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dispatch Orders Modal */}
+      {showDispatchModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Dispatch Orders</h2>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to dispatch {selectedOrders.length} selected allocated orders?
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              This will generate load out numbers and change status to 'dispatched'.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                onClick={() => setShowDispatchModal(false)}
                 variant="outline"
               >
                 Cancel
               </Button>
               <Button
-                onClick={handleCloseMultipleOrders}
-                disabled={!closeReason}
-                className="bg-red-600 hover:bg-red-700"
+                onClick={handleDispatchOrders}
+                className="bg-blue-600 hover:bg-blue-700"
               >
-                Close Orders
+                Dispatch Orders
               </Button>
             </div>
           </div>
@@ -860,6 +1093,16 @@ export default function RetailerOrdersPage() {
                     {selectedOrderForLog.processingStatus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </span>
                 </div>
+                {selectedOrderForLog.loadOutNumber && (
+                  <div>
+                    <span className="font-medium">Load Out Number:</span> {selectedOrderForLog.loadOutNumber}
+                  </div>
+                )}
+                {selectedOrderForLog.manufacturingDate && (
+                  <div>
+                    <span className="font-medium">Manufacturing Date:</span> {selectedOrderForLog.manufacturingDate}
+                  </div>
+                )}
               </div>
 
               <div className="border-t pt-4">
@@ -885,74 +1128,6 @@ export default function RetailerOrdersPage() {
                   )}
                 </div>
               </div>
-
-              {selectedOrderForLog.status === 'accepted' && selectedOrderForLog.processingStatus === 'confirmed_not_dispatched' && (
-                <div className="border-t pt-4">
-                  <h3 className="font-medium mb-2">Close Order</h3>
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          name="closeReason"
-                          value="Stock Out"
-                          checked={selectedCloseReason === 'Stock Out'}
-                          onChange={(e) => setSelectedCloseReason(e.target.value)}
-                          className="text-red-600"
-                        />
-                        <span className="text-red-600 font-medium">Stock Out</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          name="closeReason"
-                          value="Partial Dispatch"
-                          checked={selectedCloseReason === 'Partial Dispatch'}
-                          onChange={(e) => setSelectedCloseReason(e.target.value)}
-                          className="text-yellow-600"
-                        />
-                        <span className="text-yellow-600 font-medium">Partial Dispatch</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          name="closeReason"
-                          value="Cancelled - Retailer Refused"
-                          checked={selectedCloseReason === 'Cancelled - Retailer Refused'}
-                          onChange={(e) => setSelectedCloseReason(e.target.value)}
-                          className="text-gray-600"
-                        />
-                        <span className="text-gray-600 font-medium">Cancelled - Retailer Refused</span>
-                      </label>
-                    </div>
-                    <div className="flex justify-end gap-2 pt-2">
-                      <Button
-                        onClick={() => {
-                          setShowProcessingLog(false)
-                          setSelectedCloseReason('')
-                        }}
-                        variant="outline"
-                        size="sm"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          if (selectedCloseReason) {
-                            handleCloseOrder(selectedOrderForLog.id, selectedCloseReason)
-                            setSelectedCloseReason('')
-                          }
-                        }}
-                        disabled={!selectedCloseReason}
-                        size="sm"
-                        className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400"
-                      >
-                        Submit Status
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

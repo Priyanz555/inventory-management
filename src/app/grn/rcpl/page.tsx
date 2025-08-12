@@ -17,7 +17,11 @@ import {
   Search,
   Truck,
   Building,
-  User
+  User,
+  ChevronDown,
+  ChevronRight,
+  Calculator,
+  Receipt
 } from "lucide-react"
 
 interface GRNLine {
@@ -30,15 +34,20 @@ interface GRNLine {
   cgstAmount: number
   sgstAmount: number
   igstAmount: number
+  cessAmount: number
+  keralaFloodCessAmount: number
   totalAmount: number
   mfgMonth: number
   mfgYear: number
   qtyCS: number
   qtyEA: number
+  baseUnit: 'CS' | 'EA'
   ptd: number
   cgstPct: number
   sgstPct: number
   igstPct: number
+  cessPct: number
+  keralaFloodCessPct: number
   lineTotal: number
   selected: boolean
 }
@@ -46,7 +55,10 @@ interface GRNLine {
 interface GRNData {
   invoiceNo: string
   invoiceDate: string
-  supplier: 'RCPL' | 'Non RCPL'
+  supplier: string
+  supplierName: string
+  supplierAddress: string
+  supplierGst: string
   sellerCode: 'Anchor Distributor' | 'Sub Distributor' | ''
   lrNumber: string
   lrName: string
@@ -73,6 +85,9 @@ export default function GRNRCPLPage() {
     invoiceNo: "",
     invoiceDate: "",
     supplier: "RCPL",
+    supplierName: "Reliance Consumer Products Limited",
+    supplierAddress: "Reliance Corporate Park, Thane Belapur Road, Ghansoli, Navi Mumbai - 400701",
+    supplierGst: "27AAACR5055K1Z5",
     sellerCode: "",
     lrNumber: "",
     lrName: "",
@@ -87,11 +102,43 @@ export default function GRNRCPLPage() {
   const [errors, setErrors] = useState<string[]>([])
   const [skuSearchTerm, setSkuSearchTerm] = useState("")
   const [filteredSkus, setFilteredSkus] = useState<string[]>([])
+  const [supplierSearchTerm, setSupplierSearchTerm] = useState("")
+  const [filteredSuppliers, setFilteredSuppliers] = useState<any[]>([])
+  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false)
+  const [expandedLines, setExpandedLines] = useState<Set<string>>(new Set())
 
   // Mock SKU data for autocomplete
   const mockSkus = [
     "SKU001", "SKU002", "SKU003", "SKU004", "SKU005",
     "COCA-COLA-500ML", "PEPSI-1L", "SPRITE-330ML", "FANTA-500ML"
+  ]
+
+  // Mock supplier data
+  const mockSuppliers = [
+    {
+      code: "RCPL",
+      name: "Reliance Consumer Products Limited",
+      address: "Reliance Corporate Park, Thane Belapur Road, Ghansoli, Navi Mumbai - 400701",
+      gst: "27AAACR5055K1Z5"
+    },
+    {
+      code: "DIST001",
+      name: "Mumbai Central Distributors",
+      address: "123, Andheri West, Mumbai - 400058",
+      gst: "27AABCM1234A1Z1"
+    },
+    {
+      code: "DIST002", 
+      name: "Delhi North Distributors",
+      address: "456, Connaught Place, New Delhi - 110001",
+      gst: "07AABCD5678B2Z2"
+    },
+    {
+      code: "DIST003",
+      name: "Bangalore South Distributors", 
+      address: "789, MG Road, Bangalore - 560001",
+      gst: "29AABCE9012C3Z3"
+    }
   ]
 
   // Mock article data for auto-population
@@ -159,13 +206,30 @@ export default function GRNRCPLPage() {
     }
   }, [skuSearchTerm])
 
+  // Filter suppliers based on search term
+  useEffect(() => {
+    if (supplierSearchTerm) {
+      const filtered = mockSuppliers.filter(supplier => 
+        supplier.name.toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
+        supplier.code.toLowerCase().includes(supplierSearchTerm.toLowerCase())
+      )
+      setFilteredSuppliers(filtered)
+      setShowSupplierDropdown(true)
+    } else {
+      setFilteredSuppliers([])
+      setShowSupplierDropdown(false)
+    }
+  }, [supplierSearchTerm])
+
   const calculateLineTotal = (line: GRNLine): number => {
     const totalQty = line.qtyCS + (line.qtyEA / 24) // Assuming 24 units per case
     const baseValue = totalQty * line.ptd
     const cgst = (baseValue * line.cgstPct) / 100
     const sgst = (baseValue * line.sgstPct) / 100
     const igst = (baseValue * line.igstPct) / 100
-    return Math.round(baseValue + cgst + sgst + igst)
+    const cess = (baseValue * line.cessPct) / 100
+    const keralaFloodCess = (baseValue * line.keralaFloodCessPct) / 100
+    return Math.round(baseValue + cgst + sgst + igst + cess + keralaFloodCess)
   }
 
   const updateTotals = (lines: GRNLine[]) => {
@@ -192,15 +256,20 @@ export default function GRNRCPLPage() {
       cgstAmount: 0,
       sgstAmount: 0,
       igstAmount: 0,
+      cessAmount: 0,
+      keralaFloodCessAmount: 0,
       totalAmount: 0,
       mfgMonth: 1,
       mfgYear: 2024,
       qtyCS: 0,
       qtyEA: 0,
+      baseUnit: 'CS',
       ptd: 0,
       cgstPct: 0,
       sgstPct: 0,
       igstPct: 0,
+      cessPct: 0,
+      keralaFloodCessPct: 0,
       lineTotal: 0,
       selected: false
     }
@@ -245,10 +314,17 @@ export default function GRNRCPLPage() {
           if (field === 'purchaseValue' || field === 'igstPct') {
             updatedLine.igstAmount = (updatedLine.purchaseValue * updatedLine.igstPct) / 100
           }
+          if (field === 'purchaseValue' || field === 'cessPct') {
+            updatedLine.cessAmount = (updatedLine.purchaseValue * updatedLine.cessPct) / 100
+          }
+          if (field === 'purchaseValue' || field === 'keralaFloodCessPct') {
+            updatedLine.keralaFloodCessAmount = (updatedLine.purchaseValue * updatedLine.keralaFloodCessPct) / 100
+          }
 
           // Calculate total amount
           updatedLine.totalAmount = updatedLine.purchaseValue - updatedLine.discountAmount + 
-                                   updatedLine.cgstAmount + updatedLine.sgstAmount + updatedLine.igstAmount
+                                   updatedLine.cgstAmount + updatedLine.sgstAmount + updatedLine.igstAmount +
+                                   updatedLine.cessAmount + updatedLine.keralaFloodCessAmount
 
           // Calculate line total for GRN
           updatedLine.lineTotal = calculateLineTotal(updatedLine)
@@ -280,6 +356,26 @@ export default function GRNRCPLPage() {
     }))
   }
 
+  const toggleLineExpansion = (lineId: string) => {
+    setExpandedLines(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(lineId)) {
+        newSet.delete(lineId)
+      } else {
+        newSet.add(lineId)
+      }
+      return newSet
+    })
+  }
+
+  const expandAllLines = () => {
+    setExpandedLines(new Set(grnData.lines.map(line => line.id)))
+  }
+
+  const collapseAllLines = () => {
+    setExpandedLines(new Set())
+  }
+
   const validateForm = (): string[] => {
     const errors: string[] = []
 
@@ -291,8 +387,12 @@ export default function GRNRCPLPage() {
       errors.push("Invoice date is required")
     }
 
-    if (grnData.supplier === 'Non RCPL' && !grnData.sellerCode) {
-      errors.push("Seller code is required for Non RCPL suppliers")
+    if (!grnData.supplier.trim()) {
+      errors.push("Supply source is required")
+    }
+
+    if (grnData.supplier !== 'RCPL' && !grnData.sellerCode) {
+      errors.push("Seller code is required for non-RCPL suppliers")
     }
 
     if (!grnData.lrNumber.trim()) {
@@ -320,6 +420,9 @@ export default function GRNRCPLPage() {
       }
       if (line.purchaseRate <= 0) {
         errors.push(`Line ${index + 1}: Purchase rate must be greater than 0`)
+      }
+      if (!line.baseUnit) {
+        errors.push(`Line ${index + 1}: Base unit is required`)
       }
     })
 
@@ -383,6 +486,52 @@ export default function GRNRCPLPage() {
     }
   }
 
+  const generatePurchaseRegister = () => {
+    // Create CSV content for purchase register
+    const headers = [
+      'Invoice No', 'Invoice Date', 'Supplier', 'Supplier Name', 'Supplier GST',
+      'SKU', 'Article Name', 'Base Unit', 'Quantity CS', 'Quantity EA',
+      'Purchase Rate', 'Purchase Value', 'Discount', 'CGST', 'SGST', 'IGST', 'CESS', 'Kerala Flood Cess', 'Total'
+    ]
+    
+    const rows = grnData.lines.map(line => [
+      grnData.invoiceNo,
+      grnData.invoiceDate,
+      grnData.supplier,
+      grnData.supplierName,
+      grnData.supplierGst,
+      line.sku,
+      line.articleName,
+      line.baseUnit,
+      line.qtyCS,
+      line.qtyEA,
+      line.purchaseRate,
+      line.purchaseValue,
+      line.discountAmount,
+      line.cgstAmount,
+      line.sgstAmount,
+      line.igstAmount,
+      line.cessAmount,
+      line.keralaFloodCessAmount,
+      line.totalAmount
+    ])
+    
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n')
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `purchase_register_${grnData.invoiceNo}_${grnData.invoiceDate}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -433,24 +582,70 @@ export default function GRNRCPLPage() {
               />
             </div>
             <div>
-              <Label htmlFor="supplier">Supplier *</Label>
-              <select
-                id="supplier"
-                value={grnData.supplier}
-                onChange={(e) => setGrnData(prev => ({ 
-                  ...prev, 
-                  supplier: e.target.value as 'RCPL' | 'Non RCPL',
-                  sellerCode: e.target.value === 'RCPL' ? '' : prev.sellerCode
-                }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--button-blue))] focus:border-[hsl(var(--button-blue))]"
-              >
-                <option value="RCPL">RCPL</option>
-                <option value="Non RCPL">Non RCPL</option>
-              </select>
+              <Label htmlFor="supplier">Supply Source *</Label>
+              <div className="relative">
+                <Input
+                  id="supplier"
+                  value={supplierSearchTerm}
+                  onChange={(e) => setSupplierSearchTerm(e.target.value)}
+                  placeholder="Search for RCPL or other distributors..."
+                  className="pr-8"
+                />
+                <Search className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              </div>
+              {showSupplierDropdown && filteredSuppliers.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                  {filteredSuppliers.map(supplier => (
+                    <div
+                      key={supplier.code}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100"
+                      onClick={() => {
+                        setGrnData(prev => ({
+                          ...prev,
+                          supplier: supplier.code,
+                          supplierName: supplier.name,
+                          supplierAddress: supplier.address,
+                          supplierGst: supplier.gst,
+                          sellerCode: supplier.code === 'RCPL' ? '' : prev.sellerCode
+                        }))
+                        setSupplierSearchTerm(supplier.name)
+                        setShowSupplierDropdown(false)
+                      }}
+                    >
+                      <div className="font-medium">{supplier.name}</div>
+                      <div className="text-xs text-gray-500">{supplier.code}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {grnData.supplier === 'Non RCPL' && (
+          {/* Supplier Details Display */}
+          {grnData.supplierName && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                <Building className="h-4 w-4" />
+                Supplier Details
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-blue-700 font-medium">Name:</p>
+                  <p className="text-blue-900">{grnData.supplierName}</p>
+                </div>
+                <div>
+                  <p className="text-blue-700 font-medium">Address:</p>
+                  <p className="text-blue-900">{grnData.supplierAddress}</p>
+                </div>
+                <div>
+                  <p className="text-blue-700 font-medium">GST Number:</p>
+                  <p className="text-blue-900 font-mono">{grnData.supplierGst}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {grnData.supplier !== 'RCPL' && grnData.supplier && (
             <div className="mt-4">
               <Label htmlFor="sellerCode">Seller Code *</Label>
               <select
@@ -501,58 +696,56 @@ export default function GRNRCPLPage() {
         </CardContent>
       </Card>
 
-      {/* Line Items Grid */}
+      {/* Line Items Grid - New Card-Based Design */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Line Items
+              Line Items ({grnData.lines.length})
             </span>
-            <Button onClick={addLine} variant="jiomart" className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Line
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={expandAllLines} 
+                variant="outline" 
+                size="sm"
+                className="text-xs"
+              >
+                Expand All
+              </Button>
+              <Button 
+                onClick={collapseAllLines} 
+                variant="outline" 
+                size="sm"
+                className="text-xs"
+              >
+                Collapse All
+              </Button>
+              <Button onClick={addLine} variant="jiomart" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Line
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {grnData.lines.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No line items added. Click "Add Line" to start.
+            <div className="text-center py-12 text-gray-500">
+              <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p className="text-lg font-medium">No line items added</p>
+              <p className="text-sm">Click "Add Line" to start adding items to your GRN</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <div className="min-w-[1200px]">
-                {/* Table Container */}
-                <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-                  {/* Header Row */}
-                  <div className="bg-gray-50 border-b-2 border-gray-200">
-                    <div className="grid grid-cols-11 gap-0 text-sm font-semibold text-gray-700">
-                      <div className="p-3 text-center w-10">✓</div>
-                      <div className="p-3 text-left w-32">Article ID</div>
-                      <div className="p-3 text-left w-24">Mfg Month-Year</div>
-                      <div className="p-3 text-right w-20">Purchase QTY</div>
-                      <div className="p-3 text-right w-24">Purchase Rate</div>
-                      <div className="p-3 text-right w-28">Purchase Value</div>
-                      <div className="p-3 text-right w-24">Discount (Rs)</div>
-                      <div className="p-3 text-right w-20">CGST (Rs)</div>
-                      <div className="p-3 text-right w-20">SGST (Rs)</div>
-                      <div className="p-3 text-right w-20">IGST (Rs)</div>
-                      <div className="p-3 text-right w-24">Total (Rs)</div>
-                    </div>
-                  </div>
-
-                  {/* Table Body */}
-                  <div className="divide-y divide-gray-100">
-                    {grnData.lines.map((line, index) => (
-                      <div 
-                        key={line.id} 
-                        className={`grid grid-cols-11 gap-0 min-h-12 hover:bg-gray-50 transition-colors ${
-                          index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                        } ${line.selected ? 'bg-blue-50' : ''}`}
-                      >
-                        {/* Checkbox */}
-                        <div className="p-3 flex items-center justify-center w-10">
+            <div className="space-y-4">
+              {grnData.lines.map((line, index) => {
+                const isExpanded = expandedLines.has(line.id)
+                return (
+                  <div key={line.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                    {/* Main Line Item Card */}
+                    <div className={`p-4 ${line.selected ? 'bg-blue-50 border-l-4 border-l-blue-500' : 'bg-white'}`}>
+                      <div className="flex items-center gap-4">
+                        {/* Selection Checkbox */}
+                        <div className="flex-shrink-0">
                           <input
                             type="checkbox"
                             checked={line.selected}
@@ -561,191 +754,305 @@ export default function GRNRCPLPage() {
                           />
                         </div>
 
-                        {/* Article ID */}
-                        <div className="p-3 text-left w-32">
-                          <div className="relative">
-                            <Input
-                              value={line.sku}
-                              onChange={(e) => {
-                                updateLine(line.id, 'sku', e.target.value)
-                                setSkuSearchTerm(e.target.value)
-                              }}
-                              placeholder="Search SKU"
-                              className="pr-8 text-sm border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                              maxLength={20}
-                            />
-                            <Search className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        {/* Line Number */}
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm font-medium text-gray-600">
+                            {index + 1}
                           </div>
-                          {line.articleName && (
-                            <p className="text-xs text-gray-500 mt-1 truncate">{line.articleName}</p>
-                          )}
-                          {skuSearchTerm && filteredSkus.length > 0 && (
-                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
-                              {filteredSkus.map(sku => (
-                                <div
-                                  key={sku}
-                                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                                  onClick={() => {
-                                    updateLine(line.id, 'sku', sku)
-                                    setSkuSearchTerm("")
-                                  }}
-                                >
-                                  {sku}
-                                </div>
-                              ))}
+                        </div>
+
+                        {/* Main Content */}
+                        <div className="flex-1 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                          {/* SKU and Article Name */}
+                          <div className="col-span-2">
+                            <div className="relative">
+                              <Label className="text-xs text-gray-600 mb-1 block">Article ID</Label>
+                              <Input
+                                value={line.sku}
+                                onChange={(e) => {
+                                  updateLine(line.id, 'sku', e.target.value)
+                                  setSkuSearchTerm(e.target.value)
+                                }}
+                                placeholder="Search SKU"
+                                className="pr-8 text-sm"
+                                maxLength={20}
+                              />
+                              <Search className="absolute right-2 top-6 h-4 w-4 text-gray-400" />
+                              {line.articleName && (
+                                <p className="text-xs text-gray-500 mt-1 truncate">{line.articleName}</p>
+                              )}
                             </div>
-                          )}
-                        </div>
+                            {skuSearchTerm && filteredSkus.length > 0 && (
+                              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                                {filteredSkus.map(sku => (
+                                  <div
+                                    key={sku}
+                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                    onClick={() => {
+                                      updateLine(line.id, 'sku', sku)
+                                      setSkuSearchTerm("")
+                                    }}
+                                  >
+                                    {sku}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
 
-                        {/* Mfg Month-Year */}
-                        <div className="p-3 text-left w-24">
-                          <div className="flex gap-1">
-                            <select
-                              value={line.mfgMonth}
-                              onChange={(e) => updateLine(line.id, 'mfgMonth', parseInt(e.target.value))}
-                              className="w-1/2 px-2 py-1 border border-gray-300 rounded text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            >
-                              {months.map(month => (
-                                <option key={month.value} value={month.value}>
-                                  {month.label}
-                                </option>
-                              ))}
-                            </select>
-                            <select
-                              value={line.mfgYear}
-                              onChange={(e) => updateLine(line.id, 'mfgYear', parseInt(e.target.value))}
-                              className="w-1/2 px-2 py-1 border border-gray-300 rounded text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            >
-                              {years.map(year => (
-                                <option key={year} value={year}>
-                                  {year}
-                                </option>
-                              ))}
-                            </select>
+                          {/* Quantity and Base Unit */}
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Quantity</Label>
+                            <div className="flex gap-1">
+                              <Input
+                                type="number"
+                                value={line.qtyCS}
+                                onChange={(e) => updateLine(line.id, 'qtyCS', parseInt(e.target.value) || 0)}
+                                min="0"
+                                placeholder="CS"
+                                className="text-sm text-center"
+                              />
+                              <select
+                                value={line.baseUnit}
+                                onChange={(e) => updateLine(line.id, 'baseUnit', e.target.value as 'CS' | 'EA')}
+                                className="px-2 py-1 border border-gray-300 rounded text-xs"
+                              >
+                                <option value="CS">CS</option>
+                                <option value="EA">EA</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Purchase Rate */}
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Rate (₹)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={line.purchaseRate}
+                              onChange={(e) => updateLine(line.id, 'purchaseRate', parseFloat(e.target.value) || 0)}
+                              min="0"
+                              placeholder="0.00"
+                              className="text-sm font-mono"
+                            />
+                          </div>
+
+                          {/* Purchase Value */}
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Value (₹)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={line.purchaseValue}
+                              onChange={(e) => updateLine(line.id, 'purchaseValue', parseFloat(e.target.value) || 0)}
+                              min="0"
+                              placeholder="0.00"
+                              className="text-sm font-mono bg-gray-50"
+                            />
+                          </div>
+
+                          {/* Total Amount */}
+                          <div>
+                            <Label className="text-xs text-gray-600 mb-1 block">Total (₹)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={line.totalAmount}
+                              onChange={(e) => updateLine(line.id, 'totalAmount', parseFloat(e.target.value) || 0)}
+                              min="0"
+                              placeholder="0.00"
+                              className="text-sm font-mono font-bold bg-green-50 border-green-200"
+                            />
                           </div>
                         </div>
 
-                        {/* Purchase QTY */}
-                        <div className="p-3 text-right w-20">
-                          <Input
-                            type="number"
-                            value={line.qtyCS}
-                            onChange={(e) => updateLine(line.id, 'qtyCS', parseInt(e.target.value) || 0)}
-                            min="0"
-                            placeholder="Qty"
-                            className="text-sm text-right font-mono border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
-
-                        {/* Purchase Rate */}
-                        <div className="p-3 text-right w-24">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={line.purchaseRate}
-                            onChange={(e) => updateLine(line.id, 'purchaseRate', parseFloat(e.target.value) || 0)}
-                            min="0"
-                            placeholder="Rate"
-                            className="text-sm text-right font-mono border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
-
-                        {/* Purchase Value */}
-                        <div className="p-3 text-right w-28">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={line.purchaseValue}
-                            onChange={(e) => updateLine(line.id, 'purchaseValue', parseFloat(e.target.value) || 0)}
-                            min="0"
-                            placeholder="Value"
-                            className="text-sm text-right font-mono border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
-
-                        {/* Discount */}
-                        <div className="p-3 text-right w-24">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={line.discountAmount}
-                            onChange={(e) => updateLine(line.id, 'discountAmount', parseFloat(e.target.value) || 0)}
-                            min="0"
-                            placeholder="Discount"
-                            className="text-sm text-right font-mono border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
-
-                        {/* CGST */}
-                        <div className="p-3 text-right w-20">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={line.cgstAmount}
-                            onChange={(e) => updateLine(line.id, 'cgstAmount', parseFloat(e.target.value) || 0)}
-                            min="0"
-                            placeholder="CGST"
-                            className="text-sm text-right font-mono border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
-
-                        {/* SGST */}
-                        <div className="p-3 text-right w-20">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={line.sgstAmount}
-                            onChange={(e) => updateLine(line.id, 'sgstAmount', parseFloat(e.target.value) || 0)}
-                            min="0"
-                            placeholder="SGST"
-                            className="text-sm text-right font-mono border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
-
-                        {/* IGST */}
-                        <div className="p-3 text-right w-20">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={line.igstAmount}
-                            onChange={(e) => updateLine(line.id, 'igstAmount', parseFloat(e.target.value) || 0)}
-                            min="0"
-                            placeholder="IGST"
-                            className="text-sm text-right font-mono border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
-
-                        {/* Total */}
-                        <div className="p-3 text-right w-24">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={line.totalAmount}
-                            onChange={(e) => updateLine(line.id, 'totalAmount', parseFloat(e.target.value) || 0)}
-                            min="0"
-                            placeholder="Total"
-                            className="text-sm text-right font-mono font-bold bg-blue-50 border-blue-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                          />
+                        {/* Expand/Collapse Button */}
+                        <div className="flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleLineExpansion(line.id)}
+                            className="p-1"
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Summary Row */}
-                  <div className="bg-gray-100 border-t-2 border-gray-300">
-                    <div className="grid grid-cols-11 gap-0 text-sm font-semibold">
-                      <div className="p-3 text-center w-10">Total</div>
-                      <div className="p-3 text-left w-32"></div>
-                      <div className="p-3 text-left w-24"></div>
-                      <div className="p-3 text-right w-20 font-mono">₹{grnData.totalQtyCS.toLocaleString()}</div>
-                      <div className="p-3 text-right w-24"></div>
-                      <div className="p-3 text-right w-28 font-mono">₹{grnData.lines.reduce((sum, line) => sum + line.purchaseValue, 0).toLocaleString()}</div>
-                      <div className="p-3 text-right w-24 font-mono">₹{grnData.lines.reduce((sum, line) => sum + line.discountAmount, 0).toLocaleString()}</div>
-                      <div className="p-3 text-right w-20 font-mono">₹{grnData.lines.reduce((sum, line) => sum + line.cgstAmount, 0).toLocaleString()}</div>
-                      <div className="p-3 text-right w-20 font-mono">₹{grnData.lines.reduce((sum, line) => sum + line.sgstAmount, 0).toLocaleString()}</div>
-                      <div className="p-3 text-right w-20 font-mono">₹{grnData.lines.reduce((sum, line) => sum + line.igstAmount, 0).toLocaleString()}</div>
-                      <div className="p-3 text-right w-24 font-mono font-bold text-green-600">₹{grnData.totalValue.toLocaleString()}</div>
                     </div>
+
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-200 bg-gray-50 p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {/* Manufacturing Details */}
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              Manufacturing Details
+                            </h4>
+                            <div className="space-y-3">
+                              <div>
+                                <Label className="text-xs text-gray-600 mb-1 block">Manufacturing Month-Year</Label>
+                                <div className="flex gap-2">
+                                  <select
+                                    value={line.mfgMonth}
+                                    onChange={(e) => updateLine(line.id, 'mfgMonth', parseInt(e.target.value))}
+                                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                                  >
+                                    {months.map(month => (
+                                      <option key={month.value} value={month.value}>
+                                        {month.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <select
+                                    value={line.mfgYear}
+                                    onChange={(e) => updateLine(line.id, 'mfgYear', parseInt(e.target.value))}
+                                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                                  >
+                                    {years.map(year => (
+                                      <option key={year} value={year}>
+                                        {year}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Tax Breakdown */}
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                              <Calculator className="h-4 w-4" />
+                              Tax Breakdown
+                            </h4>
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-600">Discount:</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={line.discountAmount}
+                                  onChange={(e) => updateLine(line.id, 'discountAmount', parseFloat(e.target.value) || 0)}
+                                  min="0"
+                                  placeholder="0.00"
+                                  className="w-20 text-xs font-mono"
+                                />
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-600">CGST:</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={line.cgstAmount}
+                                  onChange={(e) => updateLine(line.id, 'cgstAmount', parseFloat(e.target.value) || 0)}
+                                  min="0"
+                                  placeholder="0.00"
+                                  className="w-20 text-xs font-mono"
+                                />
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-600">SGST:</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={line.sgstAmount}
+                                  onChange={(e) => updateLine(line.id, 'sgstAmount', parseFloat(e.target.value) || 0)}
+                                  min="0"
+                                  placeholder="0.00"
+                                  className="w-20 text-xs font-mono"
+                                />
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-600">IGST:</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={line.igstAmount}
+                                  onChange={(e) => updateLine(line.id, 'igstAmount', parseFloat(e.target.value) || 0)}
+                                  min="0"
+                                  placeholder="0.00"
+                                  className="w-20 text-xs font-mono"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Additional Taxes */}
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                              <Receipt className="h-4 w-4" />
+                              Additional Taxes
+                            </h4>
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-600">CESS:</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={line.cessAmount}
+                                  onChange={(e) => updateLine(line.id, 'cessAmount', parseFloat(e.target.value) || 0)}
+                                  min="0"
+                                  placeholder="0.00"
+                                  className="w-20 text-xs font-mono"
+                                />
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-600">Kerala Flood Cess:</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={line.keralaFloodCessAmount}
+                                  onChange={(e) => updateLine(line.id, 'keralaFloodCessAmount', parseFloat(e.target.value) || 0)}
+                                  min="0"
+                                  placeholder="0.00"
+                                  className="w-20 text-xs font-mono"
+                                />
+                              </div>
+                              <div className="pt-2 border-t border-gray-200">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs font-medium text-gray-700">Total Tax:</span>
+                                  <span className="text-sm font-bold text-blue-600">
+                                    ₹{(line.cgstAmount + line.sgstAmount + line.igstAmount + line.cessAmount + line.keralaFloodCessAmount).toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+
+              {/* Summary Card */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  Summary
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <p className="text-sm text-blue-700">Total Quantity (CS)</p>
+                    <p className="text-xl font-bold text-blue-900">{grnData.totalQtyCS.toLocaleString()}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-blue-700">Total Quantity (EA)</p>
+                    <p className="text-xl font-bold text-blue-900">{grnData.totalQtyEA.toLocaleString()}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-blue-700">Total Purchase Value</p>
+                    <p className="text-xl font-bold text-blue-900">₹{grnData.lines.reduce((sum, line) => sum + line.purchaseValue, 0).toLocaleString()}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-blue-700">Grand Total</p>
+                    <p className="text-xl font-bold text-green-600">₹{grnData.totalValue.toLocaleString()}</p>
                   </div>
                 </div>
               </div>
@@ -754,153 +1061,9 @@ export default function GRNRCPLPage() {
         </CardContent>
       </Card>
 
-      {/* Footer Totals */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Total Quantity (CS)</p>
-              <p className="text-2xl font-bold">{grnData.totalQtyCS.toLocaleString()}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Total Quantity (EA)</p>
-              <p className="text-2xl font-bold">{grnData.totalQtyEA.toLocaleString()}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Total Value (₹)</p>
-              <p className="text-2xl font-bold">₹{grnData.totalValue.toLocaleString()}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Taxation Data Display */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Taxation Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {grnData.lines.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No line items to calculate taxes.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {grnData.lines.map((line, index) => (
-                <div key={line.id} className="border border-gray-200 rounded-lg p-4 mb-4 hover:bg-gray-50 transition-colors">
-                  {/* Master Row - Item ID and Basic Info */}
-                  <div className="grid grid-cols-12 gap-3 items-center mb-3">
-                    <div className="col-span-1 w-12 flex justify-center">
-                      <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                        {index + 1}
-                      </div>
-                    </div>
-                    <div className="col-span-11">
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{line.sku || 'SKU Not Set'}</p>
-                          {line.articleName && (
-                            <p className="text-xs text-gray-500">{line.articleName}</p>
-                          )}
-                        </div>
-                        <div className="ml-auto text-right">
-                          <p className="text-sm font-medium text-gray-900">Purchase Value: ₹{line.purchaseValue.toLocaleString()}</p>
-                          <p className="text-xs text-gray-500">Qty: {line.qtyCS} CS</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Sub Row - Tax Breakdown */}
-                  <div className="grid grid-cols-6 gap-4 items-center">
-                    <div className="col-span-1">
-                      <div className="text-center">
-                        <p className="text-xs text-gray-600 mb-1">Discount</p>
-                        <p className="text-sm font-medium text-red-600">₹{line.discountAmount.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div className="col-span-1">
-                      <div className="text-center">
-                        <p className="text-xs text-gray-600 mb-1">CGST</p>
-                        <p className="text-sm font-medium text-orange-600">₹{line.cgstAmount.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div className="col-span-1">
-                      <div className="text-center">
-                        <p className="text-xs text-gray-600 mb-1">SGST</p>
-                        <p className="text-sm font-medium text-orange-600">₹{line.sgstAmount.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div className="col-span-1">
-                      <div className="text-center">
-                        <p className="text-xs text-gray-600 mb-1">IGST</p>
-                        <p className="text-sm font-medium text-orange-600">₹{line.igstAmount.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div className="col-span-1">
-                      <div className="text-center">
-                        <p className="text-xs text-gray-600 mb-1">Total Tax</p>
-                        <p className="text-sm font-medium text-blue-600">₹{(line.cgstAmount + line.sgstAmount + line.igstAmount).toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div className="col-span-1">
-                      <div className="text-center">
-                        <p className="text-xs text-gray-600 mb-1">Net Total</p>
-                        <p className="text-sm font-bold text-green-600 bg-green-50 px-2 py-1 rounded">₹{line.totalAmount.toLocaleString()}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
 
-              {/* Summary Row */}
-              <div className="border-t-2 border-gray-300 pt-4 mt-6">
-                <div className="grid grid-cols-6 gap-4 items-center">
-                  <div className="col-span-1">
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600 mb-1">Total Discount</p>
-                      <p className="text-sm font-bold text-red-600">₹{grnData.lines.reduce((sum, line) => sum + line.discountAmount, 0).toLocaleString()}</p>
-                    </div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600 mb-1">Total CGST</p>
-                      <p className="text-sm font-bold text-orange-600">₹{grnData.lines.reduce((sum, line) => sum + line.cgstAmount, 0).toLocaleString()}</p>
-                    </div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600 mb-1">Total SGST</p>
-                      <p className="text-sm font-bold text-orange-600">₹{grnData.lines.reduce((sum, line) => sum + line.sgstAmount, 0).toLocaleString()}</p>
-                    </div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600 mb-1">Total IGST</p>
-                      <p className="text-sm font-bold text-orange-600">₹{grnData.lines.reduce((sum, line) => sum + line.igstAmount, 0).toLocaleString()}</p>
-                    </div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600 mb-1">Total Tax</p>
-                      <p className="text-sm font-bold text-blue-600">₹{grnData.lines.reduce((sum, line) => sum + line.cgstAmount + line.sgstAmount + line.igstAmount, 0).toLocaleString()}</p>
-                    </div>
-                  </div>
-                  <div className="col-span-1">
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600 mb-1">Grand Total</p>
-                      <p className="text-lg font-bold text-green-600 bg-green-50 px-3 py-2 rounded">₹{grnData.lines.reduce((sum, line) => sum + line.totalAmount, 0).toLocaleString()}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Footer Actions */}
       <div className="flex items-center justify-between">
@@ -917,6 +1080,15 @@ export default function GRNRCPLPage() {
           >
             <Trash2 className="h-4 w-4" />
             Delete Selected
+          </Button>
+          <Button 
+            onClick={generatePurchaseRegister}
+            variant="outline"
+            className="flex items-center gap-2"
+            disabled={grnData.lines.length === 0}
+          >
+            <FileText className="h-4 w-4" />
+            Generate Purchase Register
           </Button>
         </div>
         <div className="flex gap-2">

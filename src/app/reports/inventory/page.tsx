@@ -23,10 +23,9 @@ interface InventoryReportItem {
 
 export default function InventoryReportPage() {
   const [filters, setFilters] = useState({
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
     sku: '',
     batch: '',
+    timeFilter: 'This Year',
   });
 
   const [reportData, setReportData] = useState<InventoryReportItem[]>([]);
@@ -43,8 +42,7 @@ export default function InventoryReportPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        startDate: filters.startDate,
-        endDate: filters.endDate,
+        timeFilter: filters.timeFilter,
         sku: filters.sku,
         batch: filters.batch,
         page: currentPage.toString(),
@@ -71,10 +69,9 @@ export default function InventoryReportPage() {
 
   const resetFilters = () => {
     setFilters({
-      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
       sku: '',
       batch: '',
+      timeFilter: 'This Year',
     });
     setCurrentPage(1);
   };
@@ -83,8 +80,7 @@ export default function InventoryReportPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        startDate: filters.startDate,
-        endDate: filters.endDate,
+        timeFilter: filters.timeFilter,
         sku: filters.sku,
         batch: filters.batch,
       });
@@ -95,7 +91,7 @@ export default function InventoryReportPage() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `inventory_report_${filters.startDate}_${filters.endDate}.csv`;
+        a.download = `inventory_report_${filters.timeFilter.toLowerCase().replace(' ', '_')}.csv`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -119,24 +115,22 @@ export default function InventoryReportPage() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={filters.startDate}
-                onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-              />
+              <Label htmlFor="timeFilter">Time Filter</Label>
+              <select
+                id="timeFilter"
+                value={filters.timeFilter}
+                onChange={(e) => setFilters(prev => ({ ...prev, timeFilter: e.target.value }))}
+                className="w-full border rounded-md px-3 py-2"
+              >
+                <option>This Year</option>
+                <option>Last Year</option>
+                <option>This Month</option>
+                <option>Last Month</option>
+                <option>This Week</option>
+                <option>Last Week</option>
+              </select>
             </div>
             <div>
               <Label htmlFor="sku">SKU Code</Label>
@@ -175,7 +169,7 @@ export default function InventoryReportPage() {
           </span>
         </div>
         <Button onClick={exportCSV} disabled={loading} variant="jiomart">
-          Export CSV (Full Result)
+          Download Excel Report
         </Button>
       </div>
 

@@ -31,7 +31,6 @@ const navigation = [
   { name: "Inventory", href: "/inventory", icon: Package },
   { name: "Orders", href: "/orders", icon: ShoppingCart },
   { name: "Cycle Count", href: "/cycle-count/upload", icon: FileText },
-  { name: "Stock Closing", href: "/closing-stock/submit", icon: FileText, badge: "Daily Task" },
 ]
 
 const adminNavigation = [

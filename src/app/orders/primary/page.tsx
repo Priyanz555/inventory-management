@@ -11,7 +11,11 @@ import {
   Search,
   Calendar,
   X,
-  Package
+  Package,
+  Truck,
+  CheckCircle,
+  XCircle,
+  AlertCircle
 } from "lucide-react"
 import Link from "next/link"
 
@@ -35,8 +39,11 @@ interface Order {
   itemCount: number
   orderValue: number
   orderDate: string
-  status: string
+  status: "in-transit" | "received" | "rejected" | "returned"
   invoiceId: string
+  supplier: "RCPL" | "Non RCPL"
+  grnStatus: "not-started" | "in-progress" | "completed"
+  rejectionReason?: string
   items: OrderItem[]
 }
 
@@ -54,6 +61,17 @@ interface GRNItem {
   marginPercent: number
 }
 
+const rejectionReasonCodes = [
+  "Damaged Goods",
+  "Wrong Items",
+  "Expired Products",
+  "Quantity Mismatch",
+  "Quality Issues",
+  "Late Delivery",
+  "Packaging Issues",
+  "Other"
+]
+
 export default function PrimaryOrdersPage() {
   const [activeCategory, setActiveCategory] = useState("all")
   const [searchOrderId, setSearchOrderId] = useState("")
@@ -61,6 +79,9 @@ export default function PrimaryOrdersPage() {
   const [dateTo, setDateTo] = useState("")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [showOrderDetails, setShowOrderDetails] = useState(false)
+  const [showRejectionModal, setShowRejectionModal] = useState(false)
+  const [rejectionReason, setRejectionReason] = useState("")
+  const [orderToReject, setOrderToReject] = useState<Order | null>(null)
 
   const primaryOrders: Order[] = [
     {
@@ -68,7 +89,9 @@ export default function PrimaryOrdersPage() {
       itemCount: 15,
       orderValue: 45000,
       orderDate: "2024-01-15",
-      status: "Delivered",
+      status: "received",
+      grnStatus: "completed",
+      supplier: "RCPL",
       invoiceId: "INV-2024-001",
       items: [
         {
@@ -106,7 +129,9 @@ export default function PrimaryOrdersPage() {
       itemCount: 8,
       orderValue: 28500,
       orderDate: "2024-01-18",
-      status: "Pending",
+      status: "in-transit",
+      grnStatus: "not-started",
+      supplier: "Non RCPL",
       invoiceId: "INV-2024-002",
       items: [
         {
@@ -130,7 +155,9 @@ export default function PrimaryOrdersPage() {
       itemCount: 12,
       orderValue: 32000,
       orderDate: "2024-01-20",
-      status: "Delivered",
+      status: "received",
+      grnStatus: "completed",
+      supplier: "RCPL",
       invoiceId: "INV-2024-003",
       items: [
         {
@@ -176,20 +203,92 @@ export default function PrimaryOrdersPage() {
           totalAmount: 55915
         }
       ]
+    },
+    {
+      id: "PO-2024-004",
+      itemCount: 6,
+      orderValue: 18000,
+      orderDate: "2024-01-22",
+      status: "in-transit",
+      grnStatus: "not-started",
+      supplier: "Non RCPL",
+      invoiceId: "INV-2024-004",
+      items: [
+        {
+          articleId: "ART-007",
+          articleName: "Organic Tea Bags 100pcs",
+          quantityEA: 200,
+          quantityCA: 20,
+          rate: 90,
+          price: 18000,
+          value: 18000,
+          discount: 900,
+          cgstAmount: 1539,
+          igstAmount: 0,
+          sgstAmount: 1539,
+          totalAmount: 18639
+        }
+      ]
+    },
+    {
+      id: "PO-2024-005",
+      itemCount: 10,
+      orderValue: 25000,
+      orderDate: "2024-01-25",
+      status: "rejected",
+      grnStatus: "not-started",
+      supplier: "RCPL",
+      invoiceId: "INV-2024-005",
+      rejectionReason: "Damaged Goods",
+      items: [
+        {
+          articleId: "ART-008",
+          articleName: "Premium Olive Oil 500ml",
+          quantityEA: 100,
+          quantityCA: 10,
+          rate: 250,
+          price: 25000,
+          value: 25000,
+          discount: 1250,
+          cgstAmount: 2137,
+          igstAmount: 0,
+          sgstAmount: 2137,
+          totalAmount: 25887
+        }
+      ]
     }
   ]
 
   const categories = [
-    { id: "all", name: "All Orders", count: primaryOrders.length },
-    { id: "delivered", name: "Delivered Orders", count: primaryOrders.filter(o => o.status === "Delivered").length },
-    { id: "pending", name: "Pending Delivery", count: primaryOrders.filter(o => o.status === "Pending").length },
+    { 
+      id: "all", 
+      name: "All Orders", 
+      count: primaryOrders.length,
+      description: "View all orders from RCPL and Non RCPL Suppliers"
+    },
+    { 
+      id: "in-transit", 
+      name: "Orders In-Transit", 
+      count: primaryOrders.filter(o => o.status === "in-transit").length,
+      description: "Orders placed but no GRN done yet"
+    },
+    { 
+      id: "received", 
+      name: "Orders Received", 
+      count: primaryOrders.filter(o => o.status === "received").length,
+      description: "Orders with GRN complete"
+    },
+    { 
+      id: "rejected", 
+      name: "Orders Rejected / Returned", 
+      count: primaryOrders.filter(o => o.status === "rejected" || o.status === "returned").length,
+      description: "Rejected/returned orders with reason codes"
+    },
   ]
 
   const filteredOrders = primaryOrders.filter((order) => {
     const matchesSearch = !searchOrderId || order.id.toLowerCase().includes(searchOrderId.toLowerCase())
-    const matchesCategory = activeCategory === "all" || 
-      (activeCategory === "delivered" && order.status === "Delivered") ||
-      (activeCategory === "pending" && order.status === "Pending")
+    const matchesCategory = activeCategory === "all" || order.status === activeCategory
     const matchesDateFrom = !dateFrom || order.orderDate >= dateFrom
     const matchesDateTo = !dateTo || order.orderDate <= dateTo
     
@@ -206,17 +305,64 @@ export default function PrimaryOrdersPage() {
     window.location.href = `/orders/primary/${order.id}/grn`
   }
 
+  const handleRejectOrder = (order: Order) => {
+    setOrderToReject(order)
+    setShowRejectionModal(true)
+  }
+
+  const confirmRejection = () => {
+    if (orderToReject && rejectionReason) {
+      // In a real app, this would update the order status via API
+      console.log(`Rejecting order ${orderToReject.id} with reason: ${rejectionReason}`)
+      setShowRejectionModal(false)
+      setRejectionReason("")
+      setOrderToReject(null)
+    }
+  }
+
   const getStatusBadge = (status: string) => {
-    const baseClasses = "px-2 py-1 rounded-full text-xs font-medium"
+    const baseClasses = "px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
     switch (status) {
-      case "Delivered":
+      case "received":
         return `${baseClasses} bg-green-100 text-green-800`
-      case "Pending":
-        return `${baseClasses} bg-yellow-100 text-yellow-800`
-      case "GRN Created":
+      case "in-transit":
         return `${baseClasses} bg-blue-100 text-blue-800`
+      case "rejected":
+        return `${baseClasses} bg-red-100 text-red-800`
+      case "returned":
+        return `${baseClasses} bg-orange-100 text-orange-800`
       default:
         return `${baseClasses} bg-gray-100 text-gray-800`
+    }
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "received":
+        return <CheckCircle className="h-3 w-3" />
+      case "in-transit":
+        return <Truck className="h-3 w-3" />
+      case "rejected":
+        return <XCircle className="h-3 w-3" />
+      case "returned":
+        return <AlertCircle className="h-3 w-3" />
+      default:
+        return null
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "received":
+        return "Received"
+      case "in-transit":
+        return "In-Transit"
+      case "rejected":
+        return "Rejected"
+      case "returned":
+        return "Returned"
+      default:
+        return status
     }
   }
 
@@ -245,19 +391,27 @@ export default function PrimaryOrdersPage() {
       </div>
 
       {/* Order Categories */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {categories.map((category) => (
-          <button
+          <Card 
             key={category.id}
-            onClick={() => setActiveCategory(category.id)}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              activeCategory === category.id
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+            className={`cursor-pointer transition-all ${
+              activeCategory === category.id 
+                ? "ring-2 ring-blue-500 bg-blue-50" 
+                : "hover:shadow-md"
             }`}
+            onClick={() => setActiveCategory(category.id)}
           >
-            {category.name} ({category.count})
-          </button>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900">{category.name}</h3>
+                  <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+                </div>
+                <div className="text-2xl font-bold text-blue-600">{category.count}</div>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
@@ -307,10 +461,12 @@ export default function PrimaryOrdersPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sr. #</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Count</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Value</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GRN Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -319,12 +475,39 @@ export default function PrimaryOrdersPage() {
                   <tr key={order.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{index + 1}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        order.supplier === "RCPL" 
+                          ? "bg-green-100 text-green-800" 
+                          : "bg-purple-100 text-purple-800"
+                      }`}>
+                        {order.supplier}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.itemCount}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹{order.orderValue.toLocaleString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.orderDate}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={getStatusBadge(order.status)}>
-                        {order.status}
+                        {getStatusIcon(order.status)}
+                        {getStatusText(order.status)}
+                      </span>
+                      {order.rejectionReason && (
+                        <div className="text-xs text-red-600 mt-1">
+                          Reason: {order.rejectionReason}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        order.grnStatus === "completed" 
+                          ? "bg-green-100 text-green-800"
+                          : order.grnStatus === "in-progress"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}>
+                        {order.grnStatus === "completed" ? "Completed" : 
+                         order.grnStatus === "in-progress" ? "In Progress" : "Not Started"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -332,21 +515,37 @@ export default function PrimaryOrdersPage() {
                         <button
                           onClick={() => handleViewOrder(order)}
                           className="text-blue-600 hover:text-blue-900"
+                          title="View Order Details"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
-                        {order.status === "Delivered" || order.status === "GRN Created" ? (
+                        {order.status === "in-transit" && (
+                          <>
+                            <button
+                              onClick={() => handleCreateGRN(order)}
+                              className="text-green-600 hover:text-green-700 font-medium hover:underline"
+                              title="Create GRN"
+                            >
+                              Create GRN
+                            </button>
+                            <button
+                              onClick={() => handleRejectOrder(order)}
+                              className="text-red-600 hover:text-red-700 font-medium hover:underline"
+                              title="Reject/Return Order"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {order.status === "received" && (
                           <button
                             onClick={() => handleCreateGRN(order)}
-                            className={`font-medium hover:underline ${
-                              order.status === "GRN Created" 
-                                ? "text-green-600 hover:text-green-700" 
-                                : "text-blue-600 hover:text-blue-700"
-                            }`}
+                            className="text-green-600 hover:text-green-700 font-medium hover:underline"
+                            title="View GRN"
                           >
-                            {order.status === "GRN Created" ? "GRN Created" : "Create GRN"}
+                            View GRN
                           </button>
-                        ) : null}
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -379,11 +578,16 @@ export default function PrimaryOrdersPage() {
               <div>
                 <h2 className="text-xl font-bold text-gray-900">Order Details</h2>
                 <p className="text-gray-600">Order ID: {selectedOrder.id}</p>
+                <p className="text-gray-600">Supplier: {selectedOrder.supplier}</p>
               </div>
               <div className="flex items-center gap-4">
                 <div className="text-sm text-gray-600">
                   <p>Invoice ID: {selectedOrder.invoiceId}</p>
                   <p>Order Date: {selectedOrder.orderDate}</p>
+                  <p>Status: {getStatusText(selectedOrder.status)}</p>
+                  {selectedOrder.rejectionReason && (
+                    <p className="text-red-600">Rejection Reason: {selectedOrder.rejectionReason}</p>
+                  )}
                 </div>
                 <Button
                   onClick={() => setShowOrderDetails(false)}
@@ -435,21 +639,90 @@ export default function PrimaryOrdersPage() {
               </table>
             </div>
 
-            {/* Create GRN Button */}
-            <div className="mt-6 flex justify-end">
-              <Button
-                onClick={() => handleCreateGRN(selectedOrder)}
-                className="bg-green-600 hover:bg-green-700"
-                disabled={selectedOrder.status === "GRN Created"}
-              >
-                {selectedOrder.status === "GRN Created" ? "GRN Created" : "Create GRN"}
-              </Button>
+            {/* Action Buttons */}
+            <div className="mt-6 flex justify-end gap-2">
+              {selectedOrder.status === "in-transit" && (
+                <>
+                  <Button
+                    onClick={() => handleCreateGRN(selectedOrder)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Create GRN
+                  </Button>
+                  <Button
+                    onClick={() => handleRejectOrder(selectedOrder)}
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                  >
+                    Reject Order
+                  </Button>
+                </>
+              )}
+              {selectedOrder.status === "received" && (
+                <Button
+                  onClick={() => handleCreateGRN(selectedOrder)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  View GRN
+                </Button>
+              )}
             </div>
           </div>
         </div>
       )}
 
-
+      {/* Rejection Modal */}
+      {showRejectionModal && orderToReject && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Reject/Return Order</h3>
+              <Button
+                onClick={() => setShowRejectionModal(false)}
+                variant="outline"
+                size="sm"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">
+                Order ID: <span className="font-medium">{orderToReject.id}</span>
+              </p>
+              <p className="text-sm text-gray-600 mb-4">
+                Please select a reason for rejection/return:
+              </p>
+              <select
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select a reason...</option>
+                {rejectionReasonCodes.map((reason) => (
+                  <option key={reason} value={reason}>
+                    {reason}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                onClick={() => setShowRejectionModal(false)}
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmRejection}
+                className="bg-red-600 hover:bg-red-700"
+                disabled={!rejectionReason}
+              >
+                Confirm Rejection
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 } 
