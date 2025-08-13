@@ -47,6 +47,7 @@ export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
+  // Layout component for the inventory management system
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar */}
