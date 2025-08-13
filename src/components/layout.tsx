@@ -130,11 +130,6 @@ export default function Layout({ children }: LayoutProps) {
                   {!sidebarCollapsed && (
                     <div className="flex items-center justify-between w-full ml-3">
                       <span className="truncate">{item.name}</span>
-                      {item.badge && (
-                        <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
-                          {item.badge}
-                        </span>
-                      )}
                     </div>
                   )}
                 </a>
