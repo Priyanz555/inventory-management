@@ -56,18 +56,27 @@ interface DashboardData {
 export default function InventoryDashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [lastRefresh, setLastRefresh] = useState<string>("")
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      // Simulate API call - replace with actual endpoint
+      console.log('Fetching dashboard data...')
       const response = await fetch('/api/inventory/dashboard')
+      console.log('Response status:', response.status)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const dashboardData = await response.json()
+      console.log('Dashboard data received:', dashboardData)
       setData(dashboardData)
       setLastRefresh(new Date().toLocaleTimeString())
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+      setError('Failed to load dashboard data. Using fallback data.')
       // Fallback mock data
       setData({
         kpi: {
@@ -175,6 +184,16 @@ export default function InventoryDashboard() {
         <h1 className="text-3xl font-bold text-gray-900">Inventory Dashboard</h1>
         <p className="text-gray-600">Real-time view of stock health and order workload</p>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex">
+            <AlertTriangle className="h-5 w-5 text-yellow-400 mr-2" />
+            <p className="text-yellow-800">{error}</p>
+          </div>
+        </div>
+      )}
 
 
 
