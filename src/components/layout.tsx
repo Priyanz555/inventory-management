@@ -18,7 +18,8 @@ import {
   HelpCircle,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ClipboardCheck
 } from "lucide-react"
 
 interface LayoutProps {
@@ -30,7 +31,7 @@ const navigation = [
   { name: "Add Inventory", href: "/opening-stock/upload", icon: FileText },
   { name: "Inventory", href: "/inventory", icon: Package },
   { name: "Orders", href: "/orders", icon: ShoppingCart },
-  { name: "Cycle Count", href: "/cycle-count/upload", icon: FileText },
+  { name: "Cycle Count", href: "/cycle-count/upload", icon: ClipboardCheck },
 ]
 
 const adminNavigation = [
