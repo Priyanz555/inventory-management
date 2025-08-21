@@ -26,7 +26,7 @@ interface InventoryItem {
 
 interface InventoryMovement {
   id: string;
-  type: 'sellable-to-expired' | 'expired-to-sellable' | 'sellable-to-damaged' | 'damaged-to-sellable' | 'sellable-to-allocated' | 'allocated-to-sellable';
+  type: 'sellable-to-expired' | 'expired-to-sellable' | 'sellable-to-damaged' | 'damaged-to-sellable';
   quantity: number;
   reasonCode?: string;
   newMfgDate?: string;
@@ -52,9 +52,7 @@ const MOVEMENT_TYPES = [
   { value: 'sellable-to-expired', label: 'Sellable → Expired', requiresReason: true, requiresMfgDate: true },
   { value: 'expired-to-sellable', label: 'Expired → Sellable', requiresReason: false, requiresMfgDate: true },
   { value: 'sellable-to-damaged', label: 'Sellable → Damaged', requiresReason: true, requiresMfgDate: false },
-  { value: 'damaged-to-sellable', label: 'Damaged → Sellable', requiresReason: true, requiresMfgDate: false },
-  { value: 'sellable-to-allocated', label: 'Sellable → Allocated', requiresReason: false, requiresMfgDate: false },
-  { value: 'allocated-to-sellable', label: 'Allocated → Sellable', requiresReason: false, requiresMfgDate: false }
+  { value: 'damaged-to-sellable', label: 'Damaged → Sellable', requiresReason: true, requiresMfgDate: false }
 ];
 
 export default function CycleCountUploadPage() {
@@ -329,12 +327,9 @@ export default function CycleCountUploadPage() {
       expiredToSellable: 0,
       sellableToDamaged: 0,
       damagedToSellable: 0,
-      sellableToAllocated: 0,
-      allocatedToSellable: 0,
       netSellableChange: 0,
       netExpiredChange: 0,
-      netDamagedChange: 0,
-      netAllocatedChange: 0
+      netDamagedChange: 0
     };
 
     movements.forEach(movement => {
@@ -359,16 +354,6 @@ export default function CycleCountUploadPage() {
           totals.netDamagedChange -= movement.quantity;
           totals.netSellableChange += movement.quantity;
           break;
-        case 'sellable-to-allocated':
-          totals.sellableToAllocated += movement.quantity;
-          totals.netSellableChange -= movement.quantity;
-          totals.netAllocatedChange += movement.quantity;
-          break;
-        case 'allocated-to-sellable':
-          totals.allocatedToSellable += movement.quantity;
-          totals.netAllocatedChange -= movement.quantity;
-          totals.netSellableChange += movement.quantity;
-          break;
       }
     });
 
@@ -388,9 +373,6 @@ export default function CycleCountUploadPage() {
     }
     if (item.damagedQty + totals.netDamagedChange < 0) {
       errors.push(`Damaged quantity would become negative (${item.damagedQty + totals.netDamagedChange})`);
-    }
-    if (item.allocatedQty + totals.netAllocatedChange < 0) {
-      errors.push(`Allocated quantity would become negative (${item.allocatedQty + totals.netAllocatedChange})`);
     }
 
     // Check for invalid movements
@@ -852,18 +834,6 @@ export default function CycleCountUploadPage() {
                                                 {totals.damagedToSellable}
                                               </span>
                                             </div>
-                                            <div className="flex justify-between">
-                                              <span className="text-gray-600">Sellable → Allocated:</span>
-                                              <span className={`font-medium ${totals.sellableToAllocated > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
-                                                {totals.sellableToAllocated}
-                                              </span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                              <span className="text-gray-600">Allocated → Sellable:</span>
-                                              <span className={`font-medium ${totals.allocatedToSellable > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                                                {totals.allocatedToSellable}
-                                              </span>
-                                            </div>
                                           </div>
                                         );
                                       })()}
@@ -895,17 +865,6 @@ export default function CycleCountUploadPage() {
                                                 </span>
                                                 <span className="text-gray-400 ml-1">
                                                   ({item.sellableQty + totals.netSellableChange})
-                                                </span>
-                                              </div>
-                                            </div>
-                                            <div className="flex justify-between">
-                                              <span className="text-gray-600">Allocated:</span>
-                                              <div className="text-right">
-                                                <span className={`font-medium ${totals.netAllocatedChange !== 0 ? 'font-bold' : ''} ${totals.netAllocatedChange > 0 ? 'text-blue-600' : totals.netAllocatedChange < 0 ? 'text-green-600' : 'text-gray-500'}`}>
-                                                  {totals.netAllocatedChange > 0 ? '+' : ''}{totals.netAllocatedChange}
-                                                </span>
-                                                <span className="text-gray-400 ml-1">
-                                                  ({item.allocatedQty + totals.netAllocatedChange})
                                                 </span>
                                               </div>
                                             </div>
@@ -1132,8 +1091,6 @@ export default function CycleCountUploadPage() {
                 <li><strong>Expired → Sellable:</strong> Requires new MFG date</li>
                 <li><strong>Sellable → Damaged:</strong> Requires reason code</li>
                 <li><strong>Damaged → Sellable:</strong> Requires reason code</li>
-                <li><strong>Sellable → Allocated:</strong> No additional requirements</li>
-                <li><strong>Allocated → Sellable:</strong> No additional requirements</li>
               </ul>
             </div>
             <div className="p-3 bg-blue-50 border border-blue-200 rounded">
