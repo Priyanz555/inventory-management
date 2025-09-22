@@ -8,7 +8,6 @@ import {
   Users, 
   Settings, 
   BarChart3, 
-  FileText,
   Menu,
   X,
   MapPin,
@@ -19,18 +18,32 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  ClipboardCheck
+  ClipboardCheck,
+  Truck,
+  Wrench,
+  ArrowRight,
+  Warehouse,
+  Package2
 } from "lucide-react"
 
 interface LayoutProps {
   children: React.ReactNode
 }
 
-const navigation = [
-  { name: "Dashboard", href: "/inventory/dashboard", icon: BarChart3 },
-  { name: "Add Inventory", href: "/opening-stock/upload", icon: FileText },
-  { name: "Inventory", href: "/inventory", icon: Package },
-  { name: "Orders", href: "/orders", icon: ShoppingCart },
+// Main navigation based on the image
+const mainNavigation = [
+  { name: "My Orders", href: "/orders/primary", icon: Package },
+  { name: "Retailer Orders", href: "/orders/retailer", icon: ShoppingCart },
+  { name: "Ready Stock", href: "/orders/ready-stock", icon: Truck },
+  { name: "Reports", href: "/reports", icon: BarChart3 },
+  { name: "Claims", href: "/claims", icon: Wrench },
+]
+
+// Inventory management section
+const inventoryNavigation = [
+  { name: "Inventory Dashboard", href: "/inventory/dashboard", icon: BarChart3 },
+  { name: "Inventory List", href: "/inventory", icon: Warehouse },
+  { name: "Opening Stock", href: "/opening-stock/upload", icon: Package2 },
   { name: "Cycle Count", href: "/cycle-count/upload", icon: ClipboardCheck },
 ]
 
@@ -66,7 +79,8 @@ export default function Layout({ children }: LayoutProps) {
             </Button>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto">
-            {navigation.map((item) => {
+            {/* Main Navigation Section */}
+            {mainNavigation.map((item) => {
               const Icon = item.icon
               return (
                 <a
@@ -76,9 +90,32 @@ export default function Layout({ children }: LayoutProps) {
                 >
                   <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
                   <span className="truncate">{item.name}</span>
+                  <ArrowRight className="ml-auto h-4 w-4" />
                 </a>
               )
             })}
+            
+            {/* Inventory Management Section */}
+            <div className="pt-4 mt-4 border-t border-gray-200">
+              <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Inventory Management</h3>
+              <div className="mt-2 space-y-1">
+                {inventoryNavigation.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      className="group flex items-center px-2 py-2 text-sm font-medium rounded-md jiomart-nav-item hover:bg-gray-50 transition-colors"
+                    >
+                      <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                      <span className="truncate">{item.name}</span>
+                      <ArrowRight className="ml-auto h-4 w-4" />
+                    </a>
+                  )
+                })}
+              </div>
+            </div>
+            
             {/* Account section */}
             <div className="pt-4 mt-4 border-t border-gray-200">
               <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Account</h3>
@@ -93,10 +130,20 @@ export default function Layout({ children }: LayoutProps) {
                     >
                       <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
                       <span className="truncate">{item.name}</span>
+                      <ArrowRight className="ml-auto h-4 w-4" />
                     </a>
                   )
                 })}
               </div>
+            </div>
+            
+            {/* Footer */}
+            <div className={`pt-4 mt-4 border-t border-gray-200 ${sidebarCollapsed ? 'px-0' : 'px-2'}`}>
+              {!sidebarCollapsed && (
+                <div className="text-xs text-gray-500 text-center">
+                  Privacy Policy | Terms & Conditions
+                </div>
+              )}
             </div>
           </nav>
         </div>
@@ -118,7 +165,8 @@ export default function Layout({ children }: LayoutProps) {
             </Button>
           </div>
           <nav className={`flex-1 space-y-1 py-4 overflow-y-auto ${sidebarCollapsed ? 'px-0' : 'px-2'}`}>
-            {navigation.map((item) => {
+            {/* Main Navigation Section */}
+            {mainNavigation.map((item) => {
               const Icon = item.icon
               return (
                 <a
@@ -132,11 +180,39 @@ export default function Layout({ children }: LayoutProps) {
                   {!sidebarCollapsed && (
                     <div className="flex items-center justify-between w-full ml-3">
                       <span className="truncate">{item.name}</span>
+                      <ArrowRight className="h-4 w-4" />
                     </div>
                   )}
                 </a>
               )
             })}
+            
+            {/* Inventory Management Section */}
+            <div className={`pt-4 mt-4 border-t border-gray-200 ${sidebarCollapsed ? 'px-0' : 'px-2'}`}>
+              {!sidebarCollapsed && <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Inventory Management</h3>}
+              <div className="mt-2 space-y-1">
+                {inventoryNavigation.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      className={`group flex items-center ${sidebarCollapsed ? 'justify-center px-0' : 'px-2'} py-2 text-sm font-medium rounded-md jiomart-nav-item hover:bg-gray-50 transition-all`}
+                      style={sidebarCollapsed ? { width: '100%' } : {}}
+                      title={sidebarCollapsed ? item.name : undefined}
+                    >
+                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      {!sidebarCollapsed && (
+                        <div className="flex items-center justify-between w-full ml-3">
+                          <span className="truncate">{item.name}</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </div>
+                      )}
+                    </a>
+                  )
+                })}
+              </div>
+            </div>
             
             {/* Admin section */}
             <div className={`pt-4 mt-4 border-t border-gray-200 ${sidebarCollapsed ? 'px-0' : 'px-2'}`}>
@@ -153,7 +229,12 @@ export default function Layout({ children }: LayoutProps) {
                       title={sidebarCollapsed ? item.name : undefined}
                     >
                       <Icon className="h-5 w-5 flex-shrink-0" />
-                      {!sidebarCollapsed && <span className="truncate ml-3">{item.name}</span>}
+                      {!sidebarCollapsed && (
+                        <div className="flex items-center justify-between w-full ml-3">
+                          <span className="truncate">{item.name}</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </div>
+                      )}
                     </a>
                   )
                 })}
@@ -175,11 +256,25 @@ export default function Layout({ children }: LayoutProps) {
                       title={sidebarCollapsed ? item.name : undefined}
                     >
                       <Icon className="h-5 w-5 flex-shrink-0" />
-                      {!sidebarCollapsed && <span className="truncate ml-3">{item.name}</span>}
+                      {!sidebarCollapsed && (
+                        <div className="flex items-center justify-between w-full ml-3">
+                          <span className="truncate">{item.name}</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </div>
+                      )}
                     </a>
                   )
                 })}
               </div>
+            </div>
+            
+            {/* Footer */}
+            <div className={`pt-4 mt-4 border-t border-gray-200 ${sidebarCollapsed ? 'px-0' : 'px-2'}`}>
+              {!sidebarCollapsed && (
+                <div className="text-xs text-gray-500 text-center">
+                  Privacy Policy | Terms & Conditions
+                </div>
+              )}
             </div>
           </nav>
         </div>
@@ -189,19 +284,24 @@ export default function Layout({ children }: LayoutProps) {
       <div className={`transition-all duration-200 ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         {/* Header */}
         <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center jiomart-header px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+          {/* Mobile menu button */}
+          <Button
+            variant="jiomartHeader"
+            size="icon"
+            className="lg:hidden mr-2"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+          
           {/* App logo */}
-          <span className="app-logo text-white font-medium text-xl">RCPL DMS</span>
+          <span className="app-logo text-white font-medium text-xl">Consumer Products</span>
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6" />
           <div className="flex items-center gap-x-4 lg:gap-x-6">
             {/* Location */}
             <div className="flex items-center gap-x-2 text-white">
               <MapPin className="h-4 w-4" />
-              <span className="text-sm">Deliver to Astral Updated primary test, Address...</span>
-              <ChevronDown className="h-4 w-4" />
-            </div>
-            {/* Available Balance */}
-            <div className="flex items-center gap-x-2 text-white">
-              <span className="text-sm">Available Balance</span>
+              <span className="text-sm">Deliver to</span>
               <ChevronDown className="h-4 w-4" />
             </div>
             {/* Shopping Cart */}

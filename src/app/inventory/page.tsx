@@ -189,10 +189,6 @@ export default function InventoryPage() {
             <Button variant="outline" onClick={() => setShowReportsPanel(true)}>
               Reports
             </Button>
-            <Button variant="jiomart" onClick={() => window.location.href = '/opening-stock/upload'}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Item
-            </Button>
           </div>
         </div>
 

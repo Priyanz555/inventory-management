@@ -5,9 +5,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     
     // Validate required fields
-    if (!body.invoiceNo || !body.invoiceDate) {
+    if (!body.orderId || !body.invoiceNo || !body.invoiceDate) {
       return NextResponse.json(
-        { error: 'Invoice number and date are required' },
+        { error: 'Order ID, invoice number and date are required' },
         { status: 400 }
       )
     }

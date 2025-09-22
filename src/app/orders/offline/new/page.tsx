@@ -28,6 +28,7 @@ interface OrderItem {
 }
 
 interface OfflineOrder {
+  retailerId: string
   retailerName: string
   orderId: string
   invoiceId: string
@@ -37,12 +38,35 @@ interface OfflineOrder {
 
 export default function OfflineOrderPage() {
   const [order, setOrder] = useState<OfflineOrder>({
+    retailerId: "",
     retailerName: "",
     orderId: "",
     invoiceId: "",
     orderDate: "",
     items: []
   })
+
+  // Mock retailer database
+  const retailerDatabase = {
+    "RP99000065": "Internal Demo Campa GST @1",
+    "RP42400065": "CDO APK @12",
+    "RP02500085": "CDO NonGST REG @2",
+    "RP12345678": "Premium Store @5",
+    "RP87654321": "City Mart @8",
+    "RP11111111": "Express Store @15",
+    "RP55555555": "Super Market @20",
+    "RP99999999": "Corner Shop @25"
+  }
+
+  const handleRetailerIdChange = (retailerId: string) => {
+    const upperCaseId = retailerId.toUpperCase()
+    setOrder(prev => ({
+      ...prev,
+      retailerId: upperCaseId,
+      retailerName: retailerDatabase[upperCaseId as keyof typeof retailerDatabase] || ""
+    }))
+  }
+
 
   const addItem = () => {
     const newItem: OrderItem = {
@@ -97,13 +121,29 @@ export default function OfflineOrderPage() {
   }
 
   const createOrder = async () => {
+    // Validate required fields
+    if (!order.retailerId) {
+      alert("Please enter a Retailer ID")
+      return
+    }
+    if (!order.retailerName) {
+      alert("Please select a valid Retailer ID")
+      return
+    }
+    if (order.items.length === 0) {
+      alert("Please add at least one item to the order")
+      return
+    }
+
     // In a real app, this would submit the order to the backend
     console.log("Creating order:", order)
+    alert("Order created successfully!")
   }
 
   const cancelOrder = () => {
     // Reset form or navigate back
     setOrder({
+      retailerId: "",
       retailerName: "",
       orderId: "",
       invoiceId: "",
@@ -134,15 +174,30 @@ export default function OfflineOrderPage() {
           <CardTitle>Order Information</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+              <Label htmlFor="retailerId" className="text-red-600">Retailer ID *</Label>
+              <Input
+                id="retailerId"
+                placeholder="Enter Retailer ID (e.g., RP99000065)"
+                value={order.retailerId}
+                onChange={(e) => handleRetailerIdChange(e.target.value)}
+                className={`uppercase ${!order.retailerId ? 'border-red-300 focus:border-red-500' : 'border-green-300 focus:border-green-500'}`}
+              />
+              <p className="text-xs text-gray-500 mt-1">Enter retailer ID to auto-fetch name</p>
+            </div>
             <div>
               <Label htmlFor="retailerName">Retailer Name</Label>
               <Input
                 id="retailerName"
-                placeholder="Retailer Name"
+                placeholder="Auto-populated from Retailer ID"
                 value={order.retailerName}
-                onChange={(e) => setOrder(prev => ({ ...prev, retailerName: e.target.value }))}
+                readOnly
+                className="bg-gray-50"
               />
+              {order.retailerId && !order.retailerName && (
+                <p className="text-xs text-red-500 mt-1">Retailer ID not found</p>
+              )}
             </div>
             <div>
               <Label htmlFor="orderId">Order ID</Label>

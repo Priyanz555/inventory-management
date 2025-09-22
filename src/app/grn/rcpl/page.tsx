@@ -21,8 +21,10 @@ import {
   ChevronDown,
   ChevronRight,
   Calculator,
-  Receipt
+  Receipt,
+  ArrowLeft
 } from "lucide-react"
+import Link from "next/link"
 
 interface GRNLine {
   id: string
@@ -53,6 +55,7 @@ interface GRNLine {
 }
 
 interface GRNData {
+  orderId: string
   invoiceNo: string
   invoiceDate: string
   supplier: string
@@ -82,6 +85,7 @@ interface ArticleData {
 
 export default function GRNRCPLPage() {
   const [grnData, setGrnData] = useState<GRNData>({
+    orderId: "",
     invoiceNo: "",
     invoiceDate: "",
     supplier: "RCPL",
@@ -379,6 +383,10 @@ export default function GRNRCPLPage() {
   const validateForm = (): string[] => {
     const errors: string[] = []
 
+    if (!grnData.orderId.trim()) {
+      errors.push("Order ID is required")
+    }
+
     if (!grnData.invoiceNo.trim()) {
       errors.push("Invoice number is required")
     }
@@ -536,9 +544,17 @@ export default function GRNRCPLPage() {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">GRN (RCPL)</h1>
-          <p className="text-gray-600">Generate goods receipt note manually</p>
+        <div className="flex items-center gap-4">
+          <Link href="/orders/primary">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Orders
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">GRN (RCPL)</h1>
+            <p className="text-gray-600">Generate goods receipt note manually</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -560,7 +576,17 @@ export default function GRNRCPLPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <Label htmlFor="orderId">Order ID *</Label>
+              <Input
+                id="orderId"
+                value={grnData.orderId}
+                onChange={(e) => setGrnData(prev => ({ ...prev, orderId: e.target.value }))}
+                placeholder="Enter order ID"
+                maxLength={30}
+              />
+            </div>
             <div>
               <Label htmlFor="invoiceNo">Invoice Number *</Label>
               <Input
