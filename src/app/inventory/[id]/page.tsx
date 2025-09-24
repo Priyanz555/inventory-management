@@ -46,6 +46,7 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
       expiredQty: 18,
       routeStock: 0,
       blockedQty: 0,
+      vanSalesQty: 0,
       grnDate: "10/10/2023",
       status: "expired"
     },
@@ -61,6 +62,7 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
       expiredQty: 0,
       routeStock: 15,
       blockedQty: 8,
+      vanSalesQty: 4,
       grnDate: "10/11/2023",
       status: "near expiry"
     },
@@ -76,6 +78,7 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
       expiredQty: 0,
       routeStock: 25,
       blockedQty: 12,
+      vanSalesQty: 8,
       grnDate: "10/01/2024",
       status: "fresh"
     },
@@ -91,6 +94,7 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
       expiredQty: 0,
       routeStock: 10,
       blockedQty: 5,
+      vanSalesQty: 3,
       grnDate: "10/02/2024",
       status: "fresh"
     }
@@ -302,7 +306,8 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Sellable Qty</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Damaged/Expired</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Route Stock</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Blocked Qty</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Blocked Stock</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">On Route (Van Sales)</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">GRN Date</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Status</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Actions</th>
@@ -344,7 +349,10 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
                         <span className="text-blue-600 font-medium">{batch.routeStock}</span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="text-purple-600 font-medium">{batch.blockedQty}</span>
+                        <span className="text-red-600 font-medium">{batch.blockedQty}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-indigo-600 font-medium">{batch.vanSalesQty}</span>
                       </td>
                       <td className="py-3 px-4 text-gray-900">{batch.grnDate}</td>
                       <td className="py-3 px-4">
