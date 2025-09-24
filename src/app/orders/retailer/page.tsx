@@ -222,6 +222,25 @@ export default function RetailerOrdersPage() {
       processingLogs: []
     },
     {
+      id: "RO-2024-010",
+      orderNumber: "RC68C1111111111111111",
+      orderDate: "03 Sept 2025, 04:20 pm",
+      fosId: "RP66666666",
+      fosName: "Cancelled Test @45",
+      retailerId: "RET010",
+      retailerName: "Cancelled Test Store (RP66666666)",
+      status: "cancelled",
+      processingStatus: "cancelled",
+      orderValue: "₹420",
+      orderQuantity: 18,
+      selected: false,
+      products: [
+        { name: "Campa Cola 500ml PET", image: "/api/placeholder/60/60", quantity: 12 },
+        { name: "Campa Energy Berry Kick 250ml PET", image: "/api/placeholder/60/60", quantity: 6 }
+      ],
+      processingLogs: []
+    },
+    {
       id: "RO-2024-008",
       orderNumber: "RC68C6666666666666666",
       orderDate: "05 Sept 2025, 11:15 am",
@@ -254,6 +273,7 @@ export default function RetailerOrdersPage() {
     { key: 'accepted', label: 'Accepted', count: retailerOrders.filter(o => o.status === 'accepted').length, icon: CheckCircle },
     { key: 'dispatched', label: 'Dispatched', count: retailerOrders.filter(o => o.status === 'dispatched').length, icon: Truck },
     { key: 'delivered', label: 'Delivered', count: retailerOrders.filter(o => o.status === 'delivered').length, icon: Package },
+    { key: 'cancelled', label: 'Cancelled', count: retailerOrders.filter(o => o.status === 'cancelled').length, icon: Ban },
     { key: 'rejected', label: 'Rejected', count: retailerOrders.filter(o => o.status === 'rejected').length, icon: XCircle },
     { key: 'returned', label: 'Returned', count: retailerOrders.filter(o => o.status === 'returned').length, icon: ArrowLeft },
     { key: 'partially_returned', label: 'Partially Returned', count: retailerOrders.filter(o => o.status === 'partially_returned').length, icon: AlertTriangle },
@@ -271,6 +291,8 @@ export default function RetailerOrdersPage() {
         return `${baseClasses} bg-blue-100 text-blue-800`
       case "delivered":
         return `${baseClasses} bg-emerald-100 text-emerald-800`
+      case "cancelled":
+        return `${baseClasses} bg-red-100 text-red-800`
       case "rejected":
         return `${baseClasses} bg-red-100 text-red-800`
       case "returned":

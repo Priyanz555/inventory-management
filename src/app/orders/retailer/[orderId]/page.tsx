@@ -16,7 +16,8 @@ import {
   Eye,
   Plus,
   FileText,
-  Package
+  Package,
+  Ban
 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -61,6 +62,8 @@ interface OrderDetails {
   dispatchDate?: string
   invoiceNumber?: string
   deliveredAt?: string
+  cancelledAt?: string
+  cancellationReason?: string
 }
 
 export default function OrderDetailsPage() {
@@ -68,6 +71,9 @@ export default function OrderDetailsPage() {
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [isMarkingDelivered, setIsMarkingDelivered] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [cancellationReason, setCancellationReason] = useState('')
 
   // Mock data generator for different order types
   const generateMockOrderDetails = (orderId: string): OrderDetails => {
@@ -395,6 +401,47 @@ export default function OrderDetailsPage() {
         dispatchDate: "04 Sept 2025, 11:00 am",
         deliveredAt: "2025-09-04T14:30:00Z",
         invoiceNumber: "INV-2024-009"
+      },
+      // Cancelled Order
+      "RO-2024-010": {
+        id: "RO-2024-010",
+        orderNumber: "RC68C1111111111111111",
+        retailerName: "Cancelled Test Store @45",
+        retailerId: "RP66666666",
+        fosName: "Cancelled Test @45",
+        status: "cancelled",
+        orderDate: "03 Sept 2025, 04:20 pm",
+        deliveryAddress: "Brigade Road, BENGALURU, Karnataka, 560025",
+        items: [
+          {
+            id: "1",
+            name: "Campa Cola 500ml PET",
+            image: "/api/placeholder/80/80",
+            totalPrice: "₹360.00",
+            quantity: 12,
+            pricePerPiece: "₹30.00/pc"
+          },
+          {
+            id: "2",
+            name: "Campa Energy Berry Kick 250ml PET",
+            image: "/api/placeholder/80/80",
+            totalPrice: "₹180.00",
+            quantity: 6,
+            pricePerPiece: "₹30.00/pc"
+          }
+        ],
+        totalMRP: "₹600",
+        margin: "- ₹60",
+        scheme: "- ₹120",
+        totalBillingPrice: "420.00",
+        totalAmount: "₹0",
+        loadOutNumber: "LO-2024-010",
+        manufacturingDate: "01 Sept 2025",
+        processingStatus: "cancelled",
+        dispatchDate: "03 Sept 2025, 06:00 pm",
+        cancelledAt: "2025-09-03T18:30:00Z",
+        cancellationReason: "Customer requested cancellation due to change in requirements",
+        invoiceNumber: "INV-2024-010"
       }
     }
 
@@ -469,6 +516,52 @@ export default function OrderDetailsPage() {
     }
   }
 
+  const handleCancelOrder = async () => {
+    if (!orderDetails || !cancellationReason.trim()) return;
+    
+    setIsCancelling(true);
+    
+    try {
+      const response = await fetch(`/api/orders/retailer/${orderDetails.id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cancellationReason: cancellationReason.trim(),
+          cancelledBy: 'Current User', // In real app, get from auth context
+          refundAmount: parseFloat(orderDetails.totalBillingPrice),
+          inventoryAdjusted: true
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update the order details with cancelled status
+        setOrderDetails(prev => prev ? {
+          ...prev,
+          status: 'cancelled',
+          processingStatus: 'cancelled',
+          cancelledAt: new Date().toISOString(),
+          cancellationReason: cancellationReason.trim()
+        } : null);
+        
+        // Close the dialog and reset form
+        setShowCancelDialog(false);
+        setCancellationReason('');
+        
+        console.log('Order cancelled:', result);
+      } else {
+        console.error('Failed to cancel order');
+      }
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+    } finally {
+      setIsCancelling(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -513,6 +606,7 @@ export default function OrderDetailsPage() {
               orderDetails.status === 'rejected' ? 'bg-red-100 text-red-800' :
               orderDetails.status === 'dispatched' ? 'bg-blue-100 text-blue-800' :
               orderDetails.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' :
+              orderDetails.status === 'cancelled' ? 'bg-red-100 text-red-800' :
               orderDetails.status === 'returned' ? 'bg-yellow-100 text-yellow-800' :
               orderDetails.status === 'partially_returned' ? 'bg-orange-100 text-orange-800' :
               'bg-gray-100 text-gray-800'
@@ -534,6 +628,12 @@ export default function OrderDetailsPage() {
             )}
             {orderDetails.deliveredAt && (
               <p className="text-emerald-600 font-medium">Delivered on: {new Date(orderDetails.deliveredAt).toLocaleString()}</p>
+            )}
+            {orderDetails.cancelledAt && (
+              <p className="text-red-600 font-medium">Cancelled on: {new Date(orderDetails.cancelledAt).toLocaleString()}</p>
+            )}
+            {orderDetails.cancellationReason && (
+              <p className="text-red-600 font-medium">Cancellation Reason: {orderDetails.cancellationReason}</p>
             )}
             {orderDetails.rejectionReason && (
               <p className="text-red-600 font-medium">Rejection Reason: {orderDetails.rejectionReason}</p>
@@ -693,6 +793,15 @@ export default function OrderDetailsPage() {
                       <Package className="h-4 w-4 mr-2" />
                       {isMarkingDelivered ? 'Marking as Delivered...' : 'Mark as Delivered'}
                     </Button>
+                    <Button 
+                      onClick={() => setShowCancelDialog(true)}
+                      disabled={isCancelling}
+                      variant="outline" 
+                      className="w-full border-red-600 text-red-600 hover:bg-red-50"
+                    >
+                      <Ban className="h-4 w-4 mr-2" />
+                      Cancel Order
+                    </Button>
                   </>
                 )}
                 
@@ -706,12 +815,69 @@ export default function OrderDetailsPage() {
                   </>
                 )}
                 
+                {orderDetails.status === 'cancelled' && (
+                  <>
+                    <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                      <Ban className="h-8 w-8 text-red-600 mx-auto mb-2" />
+                      <p className="text-red-800 font-medium">Order Cancelled</p>
+                      <p className="text-red-600 text-sm">Order has been cancelled</p>
+                    </div>
+                  </>
+                )}
+                
                 
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Cancellation Dialog */}
+      {showCancelDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Cancel Order</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to cancel this order? This action cannot be undone.
+            </p>
+            
+            <div className="mb-4">
+              <label htmlFor="cancellationReason" className="block text-sm font-medium text-gray-700 mb-2">
+                Cancellation Reason *
+              </label>
+              <textarea
+                id="cancellationReason"
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                placeholder="Please provide a reason for cancellation..."
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                rows={3}
+                required
+              />
+            </div>
+            
+            <div className="flex gap-3 justify-end">
+              <Button
+                onClick={() => {
+                  setShowCancelDialog(false);
+                  setCancellationReason('');
+                }}
+                variant="outline"
+                disabled={isCancelling}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCancelOrder}
+                disabled={isCancelling || !cancellationReason.trim()}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {isCancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
