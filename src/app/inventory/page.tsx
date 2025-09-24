@@ -37,6 +37,7 @@ export default function InventoryPage() {
       expiredQty: 0,
       blockedQty: 8,
       routeStock: 25,
+      vanSalesQty: 12,
       status: "in stock"
     },
     {
@@ -49,6 +50,7 @@ export default function InventoryPage() {
       expiredQty: 0,
       blockedQty: 3,
       routeStock: 8,
+      vanSalesQty: 4,
       status: "low stock"
     },
     {
@@ -61,6 +63,7 @@ export default function InventoryPage() {
       expiredQty: 15,
       blockedQty: 0,
       routeStock: 0,
+      vanSalesQty: 0,
       status: "out-of-stock"
     },
     {
@@ -73,6 +76,7 @@ export default function InventoryPage() {
       expiredQty: 0,
       blockedQty: 12,
       routeStock: 15,
+      vanSalesQty: 8,
       status: "in stock"
     },
     {
@@ -85,6 +89,7 @@ export default function InventoryPage() {
       expiredQty: 0,
       blockedQty: 5,
       routeStock: 3,
+      vanSalesQty: 2,
       status: "low stock"
     }
   ]
@@ -297,6 +302,8 @@ export default function InventoryPage() {
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Sellable Stock</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Allocated Stock</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-800">On Route Stock</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-800">Blocked Stock</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-800">On Route (Van Sales)</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Expired Stock</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Damaged Stock</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-800">Status</th>
@@ -316,7 +323,7 @@ export default function InventoryPage() {
                       </div>
                     </td>
                       <td className="py-3 px-4">
-                        <span className="text-blue-600 font-medium">{item.sellableQty + item.routeStock + item.expiredQty + item.damagedQty + item.blockedQty}</span>
+                        <span className="text-blue-600 font-medium">{item.sellableQty + item.routeStock + item.expiredQty + item.damagedQty + item.blockedQty + item.vanSalesQty}</span>
                       </td>
                       <td className="py-3 px-4">
                         <span className="text-green-600 font-medium">{item.sellableQty}</span>
@@ -326,6 +333,12 @@ export default function InventoryPage() {
                       </td>
                       <td className="py-3 px-4">
                         <span className="text-blue-600 font-medium">{item.routeStock}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-red-600 font-medium">{item.blockedQty}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-indigo-600 font-medium">{item.vanSalesQty}</span>
                       </td>
                       <td className="py-3 px-4">
                         <span className="text-gray-600 font-medium">{item.expiredQty}</span>
