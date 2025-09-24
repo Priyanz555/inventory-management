@@ -310,7 +310,6 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
                     <th className="text-left py-3 px-4 font-medium text-gray-700">On Route (Van Sales)</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">GRN Date</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -360,11 +359,6 @@ export default function InventoryItemPage({ params }: { params: { id: string } }
                           {getStatusIcon(batch.status)}
                           {getStatusBadge(batch.status)}
                         </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <Button size="sm" variant="outline">
-                          <Edit className="h-4 w-4" />
-                        </Button>
                       </td>
                     </tr>
                   ))}
