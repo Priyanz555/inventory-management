@@ -15,7 +15,8 @@ import {
   Truck,
   Eye,
   Plus,
-  FileText
+  FileText,
+  Package
 } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -59,12 +60,14 @@ interface OrderDetails {
   returnReason?: string
   dispatchDate?: string
   invoiceNumber?: string
+  deliveredAt?: string
 }
 
 export default function OrderDetailsPage() {
   const params = useParams()
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isMarkingDelivered, setIsMarkingDelivered] = useState(false)
 
   // Mock data generator for different order types
   const generateMockOrderDetails = (orderId: string): OrderDetails => {
@@ -352,6 +355,46 @@ export default function OrderDetailsPage() {
         totalAmount: "₹180",
         processingStatus: "billed",
         invoiceNumber: "INV-OFF-008"
+      },
+      // Delivered Order
+      "RO-2024-009": {
+        id: "RO-2024-009",
+        orderNumber: "RC68C9999999999999998",
+        retailerName: "Delivery Test Store @40",
+        retailerId: "RP55555555",
+        fosName: "Delivery Test @40",
+        status: "delivered",
+        orderDate: "04 Sept 2025, 09:30 am",
+        deliveryAddress: "Commercial Street, BENGALURU, Karnataka, 560008",
+        items: [
+          {
+            id: "1",
+            name: "Campa Cola 500ml PET",
+            image: "/api/placeholder/80/80",
+            totalPrice: "₹300.00",
+            quantity: 10,
+            pricePerPiece: "₹30.00/pc"
+          },
+          {
+            id: "2",
+            name: "Campa Energy Berry Kick 250ml PET",
+            image: "/api/placeholder/80/80",
+            totalPrice: "₹150.00",
+            quantity: 5,
+            pricePerPiece: "₹30.00/pc"
+          }
+        ],
+        totalMRP: "₹500",
+        margin: "- ₹50",
+        scheme: "- ₹70",
+        totalBillingPrice: "380.00",
+        totalAmount: "₹380",
+        loadOutNumber: "LO-2024-009",
+        manufacturingDate: "02 Sept 2025",
+        processingStatus: "delivered",
+        dispatchDate: "04 Sept 2025, 11:00 am",
+        deliveredAt: "2025-09-04T14:30:00Z",
+        invoiceNumber: "INV-2024-009"
       }
     }
 
@@ -385,6 +428,45 @@ export default function OrderDetailsPage() {
   const handleReject = () => {
     console.log("Rejecting order:", orderDetails?.id)
     // Implement reject logic
+  }
+
+  const handleMarkAsDelivered = async () => {
+    if (!orderDetails) return;
+    
+    setIsMarkingDelivered(true);
+    
+    try {
+      const response = await fetch(`/api/orders/retailer/${orderDetails.id}/deliver`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          deliveredBy: 'Current User', // In real app, get from auth context
+          deliveryNotes: 'Order delivered successfully'
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update the order details with delivered status
+        setOrderDetails(prev => prev ? {
+          ...prev,
+          status: 'delivered',
+          processingStatus: 'delivered',
+          deliveredAt: new Date().toISOString()
+        } : null);
+        
+        console.log('Order marked as delivered:', result);
+      } else {
+        console.error('Failed to mark order as delivered');
+      }
+    } catch (error) {
+      console.error('Error marking order as delivered:', error);
+    } finally {
+      setIsMarkingDelivered(false);
+    }
   }
 
   if (loading) {
@@ -430,6 +512,7 @@ export default function OrderDetailsPage() {
               orderDetails.status === 'accepted' ? 'bg-green-100 text-green-800' :
               orderDetails.status === 'rejected' ? 'bg-red-100 text-red-800' :
               orderDetails.status === 'dispatched' ? 'bg-blue-100 text-blue-800' :
+              orderDetails.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' :
               orderDetails.status === 'returned' ? 'bg-yellow-100 text-yellow-800' :
               orderDetails.status === 'partially_returned' ? 'bg-orange-100 text-orange-800' :
               'bg-gray-100 text-gray-800'
@@ -448,6 +531,9 @@ export default function OrderDetailsPage() {
             {/* Additional status-specific information */}
             {orderDetails.dispatchDate && (
               <p className="text-green-600 font-medium">Dispatched on: {orderDetails.dispatchDate}</p>
+            )}
+            {orderDetails.deliveredAt && (
+              <p className="text-emerald-600 font-medium">Delivered on: {new Date(orderDetails.deliveredAt).toLocaleString()}</p>
             )}
             {orderDetails.rejectionReason && (
               <p className="text-red-600 font-medium">Rejection Reason: {orderDetails.rejectionReason}</p>
@@ -597,6 +683,28 @@ export default function OrderDetailsPage() {
                   </>
                 )}
                 
+                {orderDetails.status === 'dispatched' && (
+                  <>
+                    <Button 
+                      onClick={handleMarkAsDelivered}
+                      disabled={isMarkingDelivered}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      {isMarkingDelivered ? 'Marking as Delivered...' : 'Mark as Delivered'}
+                    </Button>
+                  </>
+                )}
+                
+                {orderDetails.status === 'delivered' && (
+                  <>
+                    <div className="text-center p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                      <Package className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
+                      <p className="text-emerald-800 font-medium">Order Delivered</p>
+                      <p className="text-emerald-600 text-sm">Successfully completed delivery</p>
+                    </div>
+                  </>
+                )}
                 
                 
               </div>

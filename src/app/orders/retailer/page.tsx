@@ -203,6 +203,25 @@ export default function RetailerOrdersPage() {
       processingLogs: []
     },
     {
+      id: "RO-2024-009",
+      orderNumber: "RC68C9999999999999998",
+      orderDate: "04 Sept 2025, 09:30 am",
+      fosId: "RP55555555",
+      fosName: "Delivery Test @40",
+      retailerId: "RET009",
+      retailerName: "Delivery Test Store (RP55555555)",
+      status: "delivered",
+      processingStatus: "delivered",
+      orderValue: "₹380",
+      orderQuantity: 15,
+      selected: false,
+      products: [
+        { name: "Campa Cola 500ml PET", image: "/api/placeholder/60/60", quantity: 10 },
+        { name: "Campa Energy Berry Kick 250ml PET", image: "/api/placeholder/60/60", quantity: 5 }
+      ],
+      processingLogs: []
+    },
+    {
       id: "RO-2024-008",
       orderNumber: "RC68C6666666666666666",
       orderDate: "05 Sept 2025, 11:15 am",
@@ -233,6 +252,8 @@ export default function RetailerOrdersPage() {
     { key: 'all', label: 'All', count: retailerOrders.length, icon: ShoppingCart },
     { key: 'pending', label: 'Pending', count: retailerOrders.filter(o => o.status === 'pending').length, icon: Clock },
     { key: 'accepted', label: 'Accepted', count: retailerOrders.filter(o => o.status === 'accepted').length, icon: CheckCircle },
+    { key: 'dispatched', label: 'Dispatched', count: retailerOrders.filter(o => o.status === 'dispatched').length, icon: Truck },
+    { key: 'delivered', label: 'Delivered', count: retailerOrders.filter(o => o.status === 'delivered').length, icon: Package },
     { key: 'rejected', label: 'Rejected', count: retailerOrders.filter(o => o.status === 'rejected').length, icon: XCircle },
     { key: 'returned', label: 'Returned', count: retailerOrders.filter(o => o.status === 'returned').length, icon: ArrowLeft },
     { key: 'partially_returned', label: 'Partially Returned', count: retailerOrders.filter(o => o.status === 'partially_returned').length, icon: AlertTriangle },
@@ -246,6 +267,10 @@ export default function RetailerOrdersPage() {
         return `${baseClasses} bg-green-100 text-green-800`
       case "pending":
         return `${baseClasses} bg-orange-100 text-orange-800`
+      case "dispatched":
+        return `${baseClasses} bg-blue-100 text-blue-800`
+      case "delivered":
+        return `${baseClasses} bg-emerald-100 text-emerald-800`
       case "rejected":
         return `${baseClasses} bg-red-100 text-red-800`
       case "returned":
